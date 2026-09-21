@@ -161,7 +161,9 @@ dr_incidents <- function(x) {
 #' @returns Updated run history, invisibly. Delivery failures remain pending.
 #' @export
 #' @examples
-#' # dr_retry_catalogs("runs", list(dataraft.catalog::dr_catalog_openlineage("https://lineage.example/api/v1/lineage")))
+#' # catalog <- dataraft.catalog::dr_catalog_openlineage(
+#' #   "https://lineage.example/api/v1/lineage")
+#' # dr_retry_catalogs("runs", list(catalog))
 dr_retry_catalogs <- function(path, catalogs) {
   catalogs <- normalize_catalogs(catalogs)
   for (record in evidence_records(path)) {

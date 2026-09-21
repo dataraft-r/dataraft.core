@@ -10,14 +10,9 @@
 #'   individual nodes passed. No raw stdout or stderr is included. Workflow
 #'   results return a compact table with `step`, `status` and `success`.
 #' @export
-#' @examplesIf requireNamespace("duckdb", quietly = TRUE)
-#' root <- tempfile("dataraft-")
-#' lake <- dataraft.lake::dr_connect_lake(dataraft.lake::dr_lake_config(dataraft.lake::dr_registry_duckdb(file.path(root, "lake.db")),
-#'   dataraft.lake::dr_storage_local(file.path(root, "data")),
-#'   landing = file.path(root, "landing"), backend = "duckdb"))
-#' dr_status(lake)
-#' dataraft.lake::dr_disconnect_lake(lake)
-#' unlink(root, recursive = TRUE)
+#' @examples
+#' orders <- dr_product("orders", data.frame(id = 1:3))
+#' dr_status(dr_run(orders))
 dr_status <- function(x, asset = NULL) {
   if (inherits(x, "dr_workflow_result")) {
     return(x$status)
@@ -282,8 +277,10 @@ dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
 #'   have empty version fields because a manifest declares dependencies.
 #' @export
 #' @examples
-#' path <- system.file("extdata", "dbt-artifacts", package = "dataraft.dbt")
-#' dr_lineage(path, "model.shop.customer_revenue")
+#' orders <- dr_product("orders", data.frame(id = 1:3))
+#' totals <- dr_product("totals", orders) |>
+#'   dr_add_recipe(dr_recipe() |> dr_step_summarise(n = dplyr::n()))
+#' dr_lineage(dr_run(totals))
 dr_lineage <- function(
   x,
   asset = NULL,
