@@ -54,7 +54,9 @@ acquired table. Nothing is read until \code{\link[=dr_run]{dr_run()}} or \code{\
 }
 \details{
 Expressions retain their R environments. Inspection records expressions,
-not captured values or credentials. Changing an external binding can change
+plus non-disclosing hashes of referenced lexical bindings. Known input columns
+take precedence over ambient names; use \code{.env$name} for explicit lexical
+bindings and \code{.data$name} for columns. Changing an external binding can change
 a later run: use an explicit \code{code_version} when enabling lake caching, and
 an explicit targets cue for dynamic environment or external state. To freeze
 a small value in an expression, inject it with \verb{!!}.

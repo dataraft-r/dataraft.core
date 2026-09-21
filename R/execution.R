@@ -773,7 +773,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
         archives[[name]] <- archive
         if (!reported && !is.null(on_input)) on_input(name, archive)
       }
-      description <- dr_inspect(source)
+      description <- inspect_source(source)
       provenance <- attr(data, "dr_source_metadata")
       if (!is.null(provenance)) description$provenance <- provenance
     }
