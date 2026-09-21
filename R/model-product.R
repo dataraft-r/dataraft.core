@@ -211,8 +211,8 @@ dr_run.dr_model_product <- function(
         result$error <- e
         if (stop_on_failure) {
           abort(
-            subclass = "dataraft_error_definition",
-            conditionMessage(e),
+            subclass = failure_subclass(result),
+            "Model publication failed. Inspect condition$result$error locally.",
             class = class(e)[[1]],
             parent = e,
             result = result
@@ -229,8 +229,12 @@ dr_run.dr_model_product <- function(
   }
   if (stop_on_failure && result$status == "blocked") {
     abort(
-      subclass = "dataraft_error_definition",
-      paste("Model", x$id, "failed checks. Inspect dr_quality_report(result)."),
+      subclass = failure_subclass(result),
+      paste(
+        "Model",
+        x$id,
+        "failed checks. Save result <- dr_trial(...) and inspect dr_quality_report(result) and dr_quality_errors(result)."
+      ),
       "dr_model_failed",
       result = result
     )
@@ -244,8 +248,11 @@ collect.dr_model_result <- function(x, ...) {
   rlang::check_dots_empty()
   if (!x$status %in% c("completed", "published")) {
     abort(
-      subclass = "dataraft_error_definition",
-      "The model failed checks. Inspect dr_quality_report(result) and dr_quality_rows(result)."
+      subclass = failure_subclass(x),
+      "The model failed checks. Save result <- dr_trial(...), then inspect dr_quality_report(result), dr_quality_rows(result) and dr_quality_errors(result).",
+      result = x,
+      checks = x$quality,
+      parent = run_result_parent(x)
     )
   }
   if (!is.null(x$data)) {

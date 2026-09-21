@@ -41,12 +41,42 @@ abort <- function(
 #' @export
 #' @name need
 
-need <- function(package) {
-  rlang::local_error_call(rlang::caller_env())
+need <- function(package, purpose = NULL) {
   if (!requireNamespace(package, quietly = TRUE)) {
-    abort(
-      subclass = "dataraft_error_definition",
-      paste("Install optional package:", package)
+    purpose <- purpose %||%
+      switch(
+        package,
+        duckdb = "Local lake storage",
+        dm = "Relational table models",
+        pointblank = "The pointblank quality engine",
+        pins = "Pin-based storage",
+        "This optional integration"
+      )
+    install <- if (startsWith(package, "dataraft.")) {
+      sprintf('pak::pak("dataraft-r/%s")', package)
+    } else {
+      sprintf('install.packages("%s")', package)
+    }
+    message <- c(
+      "{purpose} requires the optional package {.pkg {package}}.",
+      i = "Install it with {.code {install}}."
+    )
+    if (identical(package, "duckdb")) {
+      message <- c(
+        message,
+        i = "For an in-memory workflow, use {.fn dr_trial} instead of lake publication."
+      )
+    }
+    cli::cli_abort(
+      message,
+      class = c(
+        "dataraft_error_dependency",
+        "dataraft_error_definition",
+        "dataraft_error"
+      ),
+      package = package,
+      purpose = purpose,
+      call = rlang::caller_env()
     )
   }
 }

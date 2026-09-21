@@ -70,7 +70,8 @@ and producer.}
 A serializable contract specification.
 }
 \description{
-Define a data contract
+Describe the columns, keys and checks a delivered table must satisfy.
+Reuse the contract across deliveries with \code{\link[=dr_add_contract]{dr_add_contract()}} or \code{\link[=dr_validate]{dr_validate()}}.
 }
 \examples{
 contract <- dr_contract(

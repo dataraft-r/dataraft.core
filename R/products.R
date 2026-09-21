@@ -1,15 +1,21 @@
 #' Define a composable data product
 #'
+#' Define a data delivery by name, its expected columns and its quality rules.
+#' A product is a reusable specification. Bind a source with [dr_add_source()],
+#' or supply data when executing a workflow. Use [dr_trial()] before writing.
+#'
+#' Add named sources, ordinary transformation functions and optional checks or
+#' a target. Use [dr_trial()] to try it, or [dr_publish()] to save checked output.
+#' [dr_run()] executes the full configuration, including writers. Products can be
+#' sources of other products; shared dependencies run once per execution.
+#'
+#' @section Table models:
 #' A table input defines a table product. A dm input defines a model product:
 #' its tables and declared relationships are checked together and published in
 #' one transaction. dr_collect() returns a dm; select a member explicitly with
 #' dr_product("report", result, table = "policies"). Model execution materializes
 #' all tables in memory. Table contracts are supplied through contracts.
 #'
-#' Add named sources, ordinary transformation functions and optional checks or
-#' a target. Use [dr_trial()] to try it, or [dr_publish()] to save checked output.
-#' [dr_run()] executes the full configuration, including writers. Products can be
-#' sources of other products; shared dependencies run once per execution.
 #' @param id Product identity, unique within a dependency graph.
 #' @param data Optional table, path, source adapter, product, or successful run.
 #'   Successful lake runs are pinned to their exact published release.
@@ -145,6 +151,7 @@ dr_model <- function(
   check = TRUE
 ) {
   need("dm")
+  need("dataraft.lake", "Models built from published lake releases")
   if (is.null(names(tables)) || anyDuplicated(names(tables))) {
     abort(
       subclass = "dataraft_error_definition",

@@ -1,4 +1,7 @@
 #' Define a data contract
+#'
+#' Describe the columns, keys and checks a delivered table must satisfy.
+#' Reuse the contract across deliveries with [dr_add_contract()] or [dr_validate()].
 #' @param id Optional contract identifier. An unnamed contract is scoped to
 #'   the product when added with [dr_add_contract()].
 #' @param version Immutable definition version.
@@ -180,7 +183,8 @@ dr_contract <- function(
 
 
 #' Define a quality rule
-#' @param name Rule name.
+#' @param name Rule name, or a one-sided formula as a shortcut. When omitted,
+#'   formula rules use their expression as a label. Explicit names stay unchanged.
 #' @param check Function taking a table and returning a logical vector or
 #'   dr_quality_counts(), or a one-sided row predicate such as `~ amount >= 0`.
 #'   A scalar function result is one aggregate test; a longer vector must have
@@ -213,14 +217,21 @@ dr_contract <- function(
 #' })
 #' rule$name
 dr_quality_rule <- function(
-  name,
-  check,
+  name = NULL,
+  check = NULL,
   severity = c("error", "warning"),
   max_failure = 0,
   description = "",
   engine = c("native", "pointblank")
 ) {
   engine_explicit <- !missing(engine)
+  if (inherits(name, "formula") && is.null(check)) {
+    check <- name
+    name <- NULL
+  }
+  if (is.null(name) && inherits(check, "formula") && length(check) == 2L) {
+    name <- rlang::as_label(rlang::f_rhs(check))
+  }
   scalar(name, "name")
   if (!is.function(check) && !inherits(check, "formula")) {
     abort(
@@ -708,7 +719,12 @@ quality_ok <- function(results) {
 
 
 #' Inspect locally retained quality exceptions
-#' @param quality Results from `dr_validate(..., keep_errors = TRUE)`.
+#' Original conditions are available only in memory, never in exported quality
+#' reports. Trial results retain them automatically. Use `conditionMessage()`
+#' locally to inspect a missing column or another rule execution error.
+#' @param quality Results from `dr_validate(..., keep_errors = TRUE)`, a trial/run
+#'   result, or a caught DataRaft condition containing `result`. Model results
+#'   prefix each rule with its member table name.
 #' @returns A named list of original R conditions, empty when none were retained.
 #' @export
 #' @examples
@@ -717,7 +733,33 @@ quality_ok <- function(results) {
 #' quality <- dr_validate(data.frame(id = 1L), contract, keep_errors = TRUE)
 #' lapply(dr_quality_errors(quality), conditionMessage)
 dr_quality_errors <- function(quality) {
-  attr(quality, "dr_errors") %||% list()
+  # Bound traversal for malformed custom conditions with cyclic result links.
+  errors <- function(x, depth = 0L) {
+    if (depth >= 20L) {
+      return(list())
+    }
+    if (inherits(x, "condition")) {
+      return(errors(x$result, depth + 1L))
+    }
+    if (inherits(x, "dr_model_result")) {
+      out <- list()
+      for (table in names(x$members)) {
+        member <- errors(x$members[[table]], depth + 1L)
+        names(member) <- paste(table, names(member), sep = "/")
+        out <- c(out, member)
+      }
+      return(out)
+    }
+    if (inherits(x, "dr_run_result")) {
+      out <- errors(x$quality, depth + 1L)
+      if (length(out)) {
+        return(out)
+      }
+      return(errors(x$error, depth + 1L))
+    }
+    attr(x, "dr_errors") %||% list()
+  }
+  errors(quality)
 }
 
 
@@ -748,10 +790,16 @@ normalize_quality_rules <- function(
     return(existing)
   }
   if (!inherits(quality, "dr_rule")) {
-    quality <- dr_quality_rule(
-      name %||% paste0("quality_", length(existing) + 1L),
-      quality
-    )
+    if (is.null(name)) {
+      label <- if (inherits(quality, "formula") && length(quality) == 2L) {
+        rlang::as_label(rlang::f_rhs(quality))
+      } else {
+        paste0("quality_", length(existing) + 1L)
+      }
+      used <- vapply(existing, `[[`, character(1), "name")
+      name <- tail(make.unique(c(used, label)), 1L)
+    }
+    quality <- dr_quality_rule(name, quality)
   } else if (!is.null(name)) {
     quality$name <- scalar(name, "name")
   }

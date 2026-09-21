@@ -201,7 +201,7 @@ evaluate_rules <- function(
           rule$name,
           "error",
           rule$severity,
-          message = "Rule execution failed; no data or raw exception text recorded.",
+          message = "Rule execution failed. Inspect locally retained conditions with dr_quality_errors(result). Raw exception text is not exported.",
           engine = rule$engine %||% "custom"
         )
       }
