@@ -325,7 +325,6 @@ dr_pointblank_checks <- function(
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name quality_row
 
 quality_row <- function(
@@ -709,7 +708,6 @@ dr_validate.default <- function(
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name quality_ok
 
 quality_ok <- function(results) {
@@ -797,7 +795,7 @@ normalize_quality_rules <- function(
         paste0("quality_", length(existing) + 1L)
       }
       used <- vapply(existing, `[[`, character(1), "name")
-      name <- tail(make.unique(c(used, label)), 1L)
+      name <- utils::tail(make.unique(c(used, label)), 1L)
     }
     quality <- dr_quality_rule(name, quality)
   } else if (!is.null(name)) {

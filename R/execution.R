@@ -249,7 +249,7 @@ collect.dr_run_result <- function(x, ...) {
       subclass = failure_subclass(x),
       c(
         run_result_message(x),
-        i = "Save result <- dr_trial(...) before collecting, then inspect dr_quality_report(result) and dr_quality_rows(result).",
+        i = "Use result <- dr_last_failure(), then inspect dr_quality_report(result) and dr_quality_rows(result).",
         i = "Inspect dr_quality_errors(result) for locally retained rule exceptions."
       ),
       result = x,
@@ -537,7 +537,6 @@ dr_execute_target.default <- function(target, product, ...) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name apply_product_transform
 
 apply_product_transform <- function(transform, data, name, sources = list()) {
@@ -564,7 +563,6 @@ apply_product_transform <- function(transform, data, name, sources = list()) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name effective_product_contract
 
 effective_product_contract <- function(product) {
@@ -593,7 +591,6 @@ effective_product_contract <- function(product) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name product_contract
 
 product_contract <- function(product, data) {
@@ -609,7 +606,6 @@ product_contract <- function(product, data) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name combine_quality
 
 combine_quality <- function(contract, rules) {
@@ -653,7 +649,6 @@ result_data <- function(result) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name read_product_sources
 
 read_product_sources <- function(product, lake = NULL, on_input = NULL) {
@@ -703,7 +698,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
       } else {
         archive <- NULL
         if (!is.null(lake) && inherits(source, "dr_source")) {
-          landed <- dataraft.lake::land_source(lake, source)
+          landed <- dataraft.lake::dr_internal_land_source(lake, source)
           archive <- list(
             source = source$id,
             source_version = source$version,
@@ -742,7 +737,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
           )
         } else {
           data <- if (identical(class(source), "dr_release_source")) {
-            dataraft.lake::read_release_source(
+            dataraft.lake::dr_internal_read_release_source(
               source,
               lake %||% context$read_lake
             )

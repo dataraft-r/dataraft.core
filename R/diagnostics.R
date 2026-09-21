@@ -18,7 +18,7 @@ dr_status <- function(x, asset = NULL) {
     return(x$status)
   }
   if (inherits(x, "dr_measurement_set") || is_measurement(x)) {
-    x <- dataraft.metrics::diagnostic_measurements(x)
+    x <- dataraft.metrics::dr_internal_diagnostic_measurements(x)
     return(dplyr::bind_rows(lapply(x, function(value) {
       manifest <- attr(value, "dr_manifest")
       tibble::tibble(
@@ -109,12 +109,11 @@ dr_status <- function(x, asset = NULL) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name metadata_filter
 
 metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
   rlang::local_error_call(rlang::caller_env())
-  dataraft.lake::assert_lake(lake)
+  dataraft.lake::dr_internal_assert_lake(lake)
   filters <- character()
   params <- list()
   if (!is.null(asset)) {
@@ -127,11 +126,15 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
     filters <- c(filters, "run_id = ?")
     params <- c(params, list(run_id))
   }
-  sql <- paste("SELECT * FROM", dataraft.lake::meta(lake, table))
+  sql <- paste("SELECT * FROM", dataraft.lake::dr_internal_meta(lake, table))
   if (length(filters)) {
     sql <- paste(sql, "WHERE", paste(filters, collapse = " AND "))
   }
-  dataraft.lake::query(lake, sql, if (length(params)) params else NULL)
+  dataraft.lake::dr_internal_query(
+    lake,
+    sql,
+    if (length(params)) params else NULL
+  )
 }
 
 
@@ -159,10 +162,10 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
 #' dr_quality(dr_validate(data.frame(id = c(1L, 1L)), contract))
 dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
   if (inherits(x, "dr_measurement_set")) {
-    return(dataraft.metrics::measurement_quality(x))
+    return(dataraft.metrics::dr_internal_measurement_quality(x))
   }
   if (is.data.frame(x) && is.list(attr(x, "dr_manifest"))) {
-    return(dataraft.metrics::measurement_quality(list(x)))
+    return(dataraft.metrics::dr_internal_measurement_quality(list(x)))
   }
   if (inherits(x, "dr_lake")) {
     if (
@@ -174,7 +177,11 @@ dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
       )
     }
     if (!is.null(release)) {
-      run_id <- dataraft.lake::resolve_release(x, asset, release)$run_id[[1]]
+      run_id <- dataraft.lake::dr_internal_resolve_release(
+        x,
+        asset,
+        release
+      )$run_id[[1]]
     } else {
       runs <- metadata_filter(x, "runs", asset = asset, run_id = run_id)
       if (!nrow(runs)) {
@@ -187,7 +194,7 @@ dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
       runs <- runs[order(runs$started_at, runs$run_id, decreasing = TRUE), ]
       run_id <- runs$run_id[[1]]
       if (runs$status[[1]] == "cached") {
-        run_id <- dataraft.lake::resolve_release(
+        run_id <- dataraft.lake::dr_internal_resolve_release(
           x,
           runs$asset[[1]],
           runs$release_id[[1]]
@@ -294,7 +301,7 @@ dr_lineage <- function(
   } else if (inherits(x, "dr_run_result")) {
     edges <- run_result_lineage(x)
   } else if (inherits(x, "dr_measurement_set") || is_measurement(x)) {
-    x <- dataraft.metrics::diagnostic_measurements(x)
+    x <- dataraft.metrics::dr_internal_diagnostic_measurements(x)
     edges <- unique(dplyr::bind_rows(lapply(x, function(value) {
       manifest <- attr(value, "dr_manifest")
       tibble::tibble(
@@ -406,7 +413,6 @@ run_result_lineage <- function(x) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name run_result_message
 
 run_result_message <- function(x) {
@@ -491,7 +497,6 @@ run_result_message <- function(x) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name run_result_parent
 
 run_result_parent <- function(x) {

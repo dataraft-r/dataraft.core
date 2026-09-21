@@ -377,11 +377,11 @@ replace_dbt_sources <- function(x, replacements) {
     }
     selected <- c(selected, matches)
     slot <- slots[[matches]]
-    refs <- dataraft.dbt::dbt_source_references(stats::setNames(
+    refs <- dataraft.dbt::dr_internal_dbt_source_references(stats::setNames(
       list(replacements[[name]]),
       slot[["alias"]]
     ))
-    dataraft.dbt::dbt_source_catalog(refs, x$lake)
+    dataraft.dbt::dr_internal_dbt_source_catalog(refs, x$lake)
     x$source_groups[[slot[["group"]]]][[slot[["alias"]]]] <- refs[[1L]]
   }
   x

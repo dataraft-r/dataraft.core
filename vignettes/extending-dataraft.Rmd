@@ -1,0 +1,117 @@
+---
+title: "Extend DataRaft through its S3 protocols"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Extend DataRaft through its S3 protocols}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", error = FALSE)
+library(dataraft.core)
+```
+
+An adapter is an ordinary R object with S3 methods. It owns access to its external
+system. Products and workflows stay independent of that system.
+
+| Protocol | Responsibility |
+|---|---|
+| `dr_check_component()` | Validate configuration without publishing data |
+| `dr_inspect()` | Return a safe description, without credentials or input rows |
+| `dr_capabilities()` | Declare what the adapter actually supports |
+| `dr_read_source()` | Return a readable table |
+| `dr_execute_transform()` | Prepare a table |
+| `dr_run_quality()` | Evaluate a quality rule |
+| `dr_write_target()` | Persist data after checks pass |
+| `dr_publish_metadata()` | Deliver metadata with explicit failure handling |
+
+## A source
+
+This small source keeps a table in an environment, standing in for an external
+client. Inspection exposes a name, not the environment's data.
+The explicit registrations make the methods available when this article executes
+in a local environment. A package uses NAMESPACE S3 registrations instead.
+
+```{r}
+example_source <- function(client, name) {
+  structure(list(client = client, name = name), class = "example_source")
+}
+dr_check_component.example_source <- function(x, ...) {
+  stopifnot(is.environment(x$client), is.character(x$name), length(x$name) == 1L)
+  invisible(x)
+}
+dr_read_source.example_source <- function(source, ...) {
+  dr_check_component(source)
+  source$client[[source$name]]
+}
+dr_inspect.example_source <- function(x, ...) list(type = "example", name = x$name)
+dr_capabilities.example_source <- function(x, ...) {
+  dr_component_capabilities(read = TRUE, write = FALSE, lazy = FALSE,
+    transactions = FALSE, partition = FALSE, immutable = FALSE)
+}
+for (generic in c("dr_check_component", "dr_read_source", "dr_inspect", "dr_capabilities")) {
+  registerS3method(generic, "example_source",
+    get(paste0(generic, ".example_source")), envir = asNamespace("dataraft.core"))
+}
+client <- new.env(parent = emptyenv())
+client$orders <- data.frame(id = 1:2, amount = c(10, 20))
+source <- example_source(client, "orders")
+dr_inspect(source)
+```
+
+## A target and its quality gate
+
+The writer receives checked data plus descriptive context. It must throw on
+failure. Its return value describes the output and must not leak credentials.
+This example deliberately claims no transaction or immutability guarantees.
+
+```{r}
+example_target <- function(client, name) {
+  structure(list(client = client, name = name), class = "example_target")
+}
+dr_check_component.example_target <- dr_check_component.example_source
+dr_inspect.example_target <- dr_inspect.example_source
+dr_capabilities.example_target <- function(x, ...) {
+  dr_component_capabilities(read = FALSE, write = TRUE, lazy = FALSE,
+    transactions = FALSE, partition = FALSE, immutable = FALSE)
+}
+dr_write_target.example_target <- function(target, data, context, ...) {
+  target$client[[target$name]] <- data
+  list(type = "example", name = target$name, rows = nrow(data))
+}
+for (generic in c("dr_check_component", "dr_inspect", "dr_capabilities", "dr_write_target")) {
+  registerS3method(generic, "example_target",
+    get(paste0(generic, ".example_target")), envir = asNamespace("dataraft.core"))
+}
+product <- dr_product("orders", source) |>
+  dr_add_quality(~ amount >= 0) |>
+  dr_set_target(example_target(client, "checked"))
+result <- dr_publish(product)
+stopifnot(identical(client$checked$amount, c(10, 20)))
+client$orders$amount <- c(-1, 20)
+failed <- dr_trial(product)
+stopifnot(failed$status == "blocked")
+try(dr_publish(product), silent = TRUE)
+stopifnot(identical(client$checked$amount, c(10, 20)))
+invisible(dr_last_failure(clear = TRUE))
+```
+
+## Package an extension
+
+Put methods in an R package importing `dataraft.core`. For each method, use
+roxygen `@export` and `@importFrom dataraft.core <generic>` so R registers it even
+when the package is loaded without attaching it. Test both direct protocol calls
+and a complete `dr_trial()` / `dr_publish()` workflow, including a blocked input
+and a failed write. Close only connections the adapter itself opened.
+
+Use the public protocols above. Names starting with `dr_internal_` are versioned
+implementation interfaces for the DataRaft family and may change before 1.0;
+external extensions should not import them. Private standalone helpers are
+copied from core's canonical source by the repository sync script. Stateful
+execution and publication logic is not copied.
+
+`dr_execute_target()` is the advanced execution hook for backends owning their
+entire transaction lifecycle. Most extensions should implement `dr_write_target()`
+and let core handle preparation and quality gates. The RDS adapter in
+`dataraft.adapters` is a complete filesystem example.

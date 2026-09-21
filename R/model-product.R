@@ -205,7 +205,7 @@ dr_run.dr_model_product <- function(
   }
   if (result$status == "completed" && !is.null(x$target)) {
     result <- tryCatch(
-      dataraft.lake::publish_model_result(x, result, previous),
+      dataraft.lake::dr_internal_publish_model_result(x, result, previous),
       error = function(e) {
         result$status <- "error"
         result$error <- e
@@ -233,7 +233,7 @@ dr_run.dr_model_product <- function(
       paste(
         "Model",
         x$id,
-        "failed checks. Save result <- dr_trial(...) and inspect dr_quality_report(result) and dr_quality_errors(result)."
+        "failed checks. Use result <- dr_last_failure() and inspect dr_quality_report(result) and dr_quality_errors(result)."
       ),
       "dr_model_failed",
       result = result
@@ -249,7 +249,7 @@ collect.dr_model_result <- function(x, ...) {
   if (!x$status %in% c("completed", "published")) {
     abort(
       subclass = failure_subclass(x),
-      "The model failed checks. Save result <- dr_trial(...), then inspect dr_quality_report(result), dr_quality_rows(result) and dr_quality_errors(result).",
+      "The model failed checks. Use result <- dr_last_failure(), then inspect dr_quality_report(result), dr_quality_rows(result) and dr_quality_errors(result).",
       result = x,
       checks = x$quality,
       parent = run_result_parent(x)
@@ -258,8 +258,8 @@ collect.dr_model_result <- function(x, ...) {
   if (!is.null(x$data)) {
     return(x$data)
   }
-  dataraft.lake::with_model_lake(x, function(lake) {
-    dataraft.lake::read_model_release(lake, x$asset, x$release_id)
+  dataraft.lake::dr_internal_with_model_lake(x, function(lake) {
+    dataraft.lake::dr_internal_read_model_release(lake, x$asset, x$release_id)
   })
 }
 

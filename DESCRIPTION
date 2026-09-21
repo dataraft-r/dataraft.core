@@ -9,16 +9,12 @@ Description: Prepare repeated data deliveries, check their columns and quality
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.2.0)
-Imports: cli, DBI, dbplyr, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble, withr
-Suggests: dataraft, dataraft.adapters, dataraft.catalog, dataraft.dbt, dataraft.lake, dataraft.metrics, dm, duckdb (>= 1.5.5), pointblank, readxl, testthat (>= 3.2.0)
+Imports: DBI, cli, dbplyr, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble, withr
+Suggests: knitr, rmarkdown, dataraft.adapters, dataraft.catalog, dataraft.dbt, dataraft.lake, dataraft.metrics, dm, duckdb (>= 1.5.5), pointblank, readxl, testthat (>= 3.2.0), RSQLite, arrow, bit64, targets
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-Remotes: dataraft-r/dataraft.lake,
-    dataraft-r/dataraft.adapters,
-    dataraft-r/dataraft.metrics,
-    dataraft-r/dataraft.dbt,
-    dataraft-r/dataraft.catalog,
-    dataraft-r/dataraft
+Remotes: dataraft-r/dataraft.adapters, dataraft-r/dataraft.catalog, dataraft-r/dataraft.dbt, dataraft-r/dataraft.lake, dataraft-r/dataraft.metrics
 URL: https://github.com/dataraft-r/dataraft.core
 BugReports: https://github.com/dataraft-r/dataraft.core/issues
+VignetteBuilder: knitr

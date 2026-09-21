@@ -479,7 +479,6 @@ safe_descriptor <- function(x) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name safe_descriptors
 
 safe_descriptors <- function(x) {

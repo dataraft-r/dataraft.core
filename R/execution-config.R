@@ -93,7 +93,6 @@ validate_execution_config <- function(execution) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name apply_execution_defaults
 
 apply_execution_defaults <- function(product, execution) {
@@ -201,7 +200,6 @@ validate_stored_execution <- function(execution) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name product_execution
 
 product_execution <- function(x, execution) {
@@ -217,7 +215,6 @@ product_execution <- function(x, execution) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name replace_execution_sources
 
 replace_execution_sources <- function(x, data = NULL, sources = NULL) {

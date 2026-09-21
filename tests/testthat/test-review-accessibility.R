@@ -44,7 +44,7 @@ test_that("failed collection retains the result and local rule causes", {
   causes <- dr_quality_errors(err)
   expect_named(causes, "amont >= 0")
   expect_match(conditionMessage(causes[[1]]), "amont")
-  expect_match(conditionMessage(err), "result <- dr_trial", fixed = TRUE)
+  expect_match(conditionMessage(err), "result <- dr_last_failure", fixed = TRUE)
   expect_match(
     dr_quality_report(result)$message[
       dr_quality_report(result)$status == "error"

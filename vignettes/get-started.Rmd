@@ -1,0 +1,46 @@
+---
+title: "Checked deliveries with core alone"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Checked deliveries with core alone}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", error = FALSE)
+library(dataraft.core)
+```
+
+A recurring delivery should have the same columns and satisfy the same rules
+on every run. A product records these requirements. A recipe records preparation;
+a workflow brings the two together. This example needs no storage engine or
+other DataRaft component.
+
+```{r}
+contract <- dr_contract(columns = c(id = "integer", amount = "numeric"), key = "id")
+product <- dr_product("orders", contract = contract) |>
+  dr_add_quality(~ amount >= 0)
+recipe <- dr_recipe() |> dr_step_mutate(amount = round(amount, 2))
+flow <- dr_workflow() |> dr_add_product(product) |> dr_add_recipe(recipe)
+result <- dr_trial(flow, data = data.frame(id = 1:3, amount = c(10, 20, 30)))
+dr_collect(result)
+dr_quality_report(result)
+```
+
+A failed check returns a result from `dr_trial()`. Collecting it raises an error.
+Even after using a pipe, the last failed execution remains available locally.
+
+```{r}
+try(dr_trial(flow, data = data.frame(id = 1:3, amount = c(10, -20, 30))) |>
+      dr_collect(), silent = TRUE)
+failed <- dr_last_failure()
+dr_quality_report(failed)
+dr_quality_rows(failed)
+invisible(dr_last_failure(clear = TRUE))
+```
+
+Use `dr_trial()` to test without configured writers, `dr_run()` to execute the
+configured workflow, and `dr_publish()` to require a destination. Storage and
+catalog components are optional. The metapackage's RDS example shows a durable
+next step; the extension article explains how to provide your own adapter.
