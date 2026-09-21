@@ -498,6 +498,7 @@ safe_descriptor <- function(x) {
     "backend",
     "version",
     "release_id",
+    "snapshot",
     "run_id",
     "product",
     "asset"

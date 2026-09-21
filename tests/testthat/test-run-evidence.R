@@ -94,6 +94,7 @@ test_that("evidence allowlist removes URL credentials and query secrets", {
       inputs = list(
         source = list(
           type = "API",
+          snapshot = "3776207205136740581",
           path = "https://user:password@example.test/data?token=private",
           query = "SELECT secret",
           request = list(password = "secret")
@@ -106,6 +107,7 @@ test_that("evidence allowlist removes URL credentials and query secrets", {
   )
   record <- safe_run_evidence(result)
   expect_equal(record$inputs[[1]]$source$path, "https://example.test/data")
+  expect_identical(record$inputs[[1]]$source$snapshot, "3776207205136740581")
   expect_null(record$inputs[[1]]$source$query)
   expect_null(record$inputs[[1]]$source$request)
   expect_false(grepl("private|password|SELECT", jsonlite::toJSON(record)))
