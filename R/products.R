@@ -113,7 +113,7 @@ dr_product <- function(
 #' @param check Validate all declared keys and relationships.
 #' @return A dm object containing lazy tables. No automatic flattening is done.
 #' @export
-#' @examplesIf requireNamespace("dataraft.lake", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE)
+#' @examplesIf requireNamespace("dataraft.lake", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE) && requireNamespace("dm", quietly = TRUE)
 #' root <- tempfile("dataraft-example-")
 #' config <- dataraft.lake::dr_lake_config(
 #'   dataraft.lake::dr_registry_duckdb(file.path(root, "lake.db")),

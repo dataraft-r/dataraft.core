@@ -266,7 +266,7 @@ dr_add_quality <- function(x, quality, name = NULL, engine = NULL) {
 #'   adapter. Use [dataraft.lake::dr_target_lake()] for partition or layer options.
 #' @returns An updated definition.
 #' @export
-#' @examples
+#' @examplesIf requireNamespace("dataraft.lake", quietly = TRUE)
 #' dr_workflow() |>
 #'   dr_add_product(dr_product("orders")) |>
 #'   dr_set_target("data/orders")

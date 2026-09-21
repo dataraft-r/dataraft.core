@@ -20,7 +20,9 @@ Store or replace a destination without writing data. \code{\link[=dr_trial]{dr_t
 it; \code{\link[=dr_run]{dr_run()}} and \code{\link[=dr_publish]{dr_publish()}} execute it after successful output checks.
 }
 \examples{
+\dontshow{if (requireNamespace("dataraft.lake", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 dr_workflow() |>
   dr_add_product(dr_product("orders")) |>
   dr_set_target("data/orders")
+\dontshow{\}) # examplesIf}
 }

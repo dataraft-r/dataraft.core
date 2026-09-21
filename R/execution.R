@@ -125,7 +125,7 @@ dr_publish_metadata.default <- function(catalog, metadata, ...) {
 #'   [dataraft.dbt::dr_dbt_publish()] options such as `contract`, `asset` and `layer`.
 #' @returns A run result. An exception on failure includes `condition$result`.
 #' @export
-#' @examplesIf requireNamespace("duckdb", quietly = TRUE)
+#' @examplesIf requireNamespace("dataraft.lake", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE)
 #' root <- tempfile("dataraft-")
 #' result <- dr_product("orders") |>
 #'   dr_add_source(data.frame(id = 1:2)) |>

@@ -27,6 +27,6 @@ Read-only access to existing published inputs is still allowed.
 }
 \examples{
 orders <- dr_product("orders", data.frame(amount = c(10, 20))) |>
-  dr_set_target("reporting-lake")
+  dr_add_quality(~ amount >= 0)
 dr_trial(orders) |> dr_collect()
 }

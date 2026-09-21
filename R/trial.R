@@ -14,7 +14,7 @@
 #' @export
 #' @examples
 #' orders <- dr_product("orders", data.frame(amount = c(10, 20))) |>
-#'   dr_set_target("reporting-lake")
+#'   dr_add_quality(~ amount >= 0)
 #' dr_trial(orders) |> dr_collect()
 dr_trial <- function(x, data = NULL, sources = NULL, stop_on_failure = FALSE) {
   if (inherits(x, "dr_product_workflow")) {
