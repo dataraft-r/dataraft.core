@@ -7,7 +7,15 @@
 \usage{
 dr_add_contract(x, contract)
 
-dr_add_quality(x, quality, name = NULL, engine = NULL)
+dr_add_quality(
+  x,
+  quality,
+  name = NULL,
+  engine = NULL,
+  action = NULL,
+  threshold = NULL,
+  dimension = NULL
+)
 }
 \arguments{
 \item{x}{A \code{\link[=dr_product]{dr_product()}} specification.}
@@ -22,6 +30,16 @@ or \code{\link[=dr_quality_counts]{dr_quality_counts()}}. Names in rule lists be
 
 \item{engine}{Optional formula quality engine, \code{"native"} or
 \code{"pointblank"}. Omit to preserve engines on existing rule specifications.}
+
+\item{action}{Optional publication policy: block, warn or quarantine. Quarantine
+removes every failing row before writing and retains it locally on the result.
+It supports native row formulas only. Standalone validation still blocks
+rejected rows until an execution path actually removes them.}
+
+\item{threshold}{Alias for max_failure, a fraction from zero to one. For
+quarantine, every rejected row is removed regardless of threshold.}
+
+\item{dimension}{Optional ODCS quality dimension.}
 }
 \value{
 An updated product specification, without executing checks.

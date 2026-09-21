@@ -63,6 +63,10 @@ quality_formula_units <- function(data, predicate) {
 
 #' @export
 dr_run_quality.dr_rule <- function(rule, data, ...) {
+  if (identical(rule$action, "quarantine")) {
+    rule$severity <- "error"
+    rule$max_failure <- 0
+  }
   if (identical(rule$engine, "pointblank")) {
     return(pointblank_results(rule, data, ...))
   }

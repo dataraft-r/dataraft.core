@@ -30,6 +30,8 @@
 #'   and producer.
 #' @param column_metadata Optional named lists for declared columns, such as
 #'   `list(amount = list(description = "Order value", unit = "EUR"))`.
+#' @param governance Named metadata: steward, classification, pii, tags, glossary,
+#'   retention, roles and sla. Descriptive policies are not automatically enforced.
 #' @return A serializable contract specification.
 #' @export
 #' @examples
@@ -53,9 +55,22 @@ dr_contract <- function(
   allow_empty = FALSE,
   allow_extra = FALSE,
   operator = NULL,
-  column_metadata = list()
+  column_metadata = list(),
+  governance = list()
 ) {
   anonymous <- missing(id)
+  if (
+    !is.list(governance) ||
+      (length(governance) &&
+        (is.null(names(governance)) ||
+          anyDuplicated(names(governance)) ||
+          any(!nzchar(names(governance)))))
+  ) {
+    abort(
+      "governance must be a named list.",
+      subclass = "dataraft_error_contract"
+    )
+  }
   if (is.list(columns)) {
     if (any(lengths(columns) != 0L)) {
       abort(
@@ -175,6 +190,9 @@ dr_contract <- function(
   if (length(column_metadata)) {
     contract$column_metadata <- column_metadata
   }
+  if (length(governance)) {
+    contract$governance <- governance
+  }
   if (anonymous) {
     attr(contract, "dr_anonymous") <- TRUE
   }
@@ -192,6 +210,13 @@ dr_contract <- function(
 #'   predicates repeated for each row. Missing logical values count as failures.
 #'   Lazy formulas run on the backend; arbitrary functions remain responsible
 #'   for their own collection.
+#' @param action Optional publication policy: block, warn or quarantine. Quarantine
+#'   removes every failing row before writing and retains it locally on the result.
+#'   It supports native row formulas only. Standalone validation still blocks
+#'   rejected rows until an execution path actually removes them.
+#' @param threshold Alias for max_failure, a fraction from zero to one. For
+#'   quarantine, every rejected row is removed regardless of threshold.
+#' @param dimension Optional ODCS quality dimension.
 #' @param severity error blocks publication; warning permits publication.
 #' @param max_failure Fraction of permitted failed test units.
 #' @param description Rule description.
@@ -222,8 +247,38 @@ dr_quality_rule <- function(
   severity = c("error", "warning"),
   max_failure = 0,
   description = "",
-  engine = c("native", "pointblank")
+  engine = c("native", "pointblank"),
+  action = NULL,
+  threshold = NULL,
+  dimension = NULL
 ) {
+  if (!is.null(action)) {
+    action <- match.arg(action, c("block", "warn", "quarantine"))
+    if (!missing(severity)) {
+      abort("Use action or severity, not both.")
+    }
+    severity <- if (action == "warn") "warning" else "error"
+  }
+  if (!is.null(threshold)) {
+    if (!missing(max_failure)) {
+      abort("Use threshold or max_failure, not both.")
+    }
+    max_failure <- threshold
+  }
+  if (!is.null(dimension)) {
+    dimension <- match.arg(
+      dimension,
+      c(
+        "accuracy",
+        "completeness",
+        "conformity",
+        "consistency",
+        "coverage",
+        "timeliness",
+        "uniqueness"
+      )
+    )
+  }
   engine_explicit <- !missing(engine)
   if (inherits(name, "formula") && is.null(check)) {
     check <- name
@@ -272,7 +327,9 @@ dr_quality_rule <- function(
       max_failure = max_failure,
       description = description,
       engine = engine,
-      engine_explicit = engine_explicit
+      engine_explicit = engine_explicit,
+      action = action,
+      dimension = dimension
     ),
     class = "dr_rule"
   )

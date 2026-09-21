@@ -12,7 +12,10 @@ dr_quality_rule(
   severity = c("error", "warning"),
   max_failure = 0,
   description = "",
-  engine = c("native", "pointblank")
+  engine = c("native", "pointblank"),
+  action = NULL,
+  threshold = NULL,
+  dimension = NULL
 )
 
 dr_quality_counts(n_failed, n_total)
@@ -48,6 +51,16 @@ for their own collection.}
 values as failures. Pointblank interrogates a real agent against the
 normalized predicate, retaining its reports and check evidence. Ordinary
 functions use the native engine; use \code{\link[=dr_pointblank_checks]{dr_pointblank_checks()}} for custom agents.}
+
+\item{action}{Optional publication policy: block, warn or quarantine. Quarantine
+removes every failing row before writing and retains it locally on the result.
+It supports native row formulas only. Standalone validation still blocks
+rejected rows until an execution path actually removes them.}
+
+\item{threshold}{Alias for max_failure, a fraction from zero to one. For
+quarantine, every rejected row is removed regardless of threshold.}
+
+\item{dimension}{Optional ODCS quality dimension.}
 
 \item{n_failed, n_total}{Failed and total test units.}
 

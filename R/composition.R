@@ -242,10 +242,20 @@ dr_add_contract <- function(x, contract) {
 }
 
 #' @rdname dr_add_contract
+#' @inheritParams dr_quality_rule
 #' @param engine Optional formula quality engine, `"native"` or
 #'   `"pointblank"`. Omit to preserve engines on existing rule specifications.
 #' @export
-dr_add_quality <- function(x, quality, name = NULL, engine = NULL) {
+dr_add_quality <- function(
+  x,
+  quality,
+  name = NULL,
+  engine = NULL,
+  action = NULL,
+  threshold = NULL,
+  dimension = NULL
+) {
+  old_count <- length(x$quality)
   x <- editable_product(x)
   x$quality <- normalize_quality_rules(
     quality,
@@ -253,6 +263,42 @@ dr_add_quality <- function(x, quality, name = NULL, engine = NULL) {
     engine,
     existing = x$quality
   )
+  if (length(x$quality) > old_count) {
+    for (i in seq.int(old_count + 1L, length(x$quality))) {
+      rule <- x$quality[[i]]
+      if (!is.null(action)) {
+        rule$action <- match.arg(action, c("block", "warn", "quarantine"))
+        rule$severity <- if (action == "warn") "warning" else "error"
+      }
+      if (!is.null(threshold)) {
+        if (
+          !is.numeric(threshold) ||
+            length(threshold) != 1L ||
+            !is.finite(threshold) ||
+            threshold < 0 ||
+            threshold > 1
+        ) {
+          abort("threshold must be between zero and one.")
+        }
+        rule$max_failure <- threshold
+      }
+      if (!is.null(dimension)) {
+        rule$dimension <- match.arg(
+          dimension,
+          c(
+            "accuracy",
+            "completeness",
+            "conformity",
+            "consistency",
+            "coverage",
+            "timeliness",
+            "uniqueness"
+          )
+        )
+      }
+      x$quality[[i]] <- rule
+    }
+  }
   x
 }
 
