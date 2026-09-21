@@ -25,7 +25,8 @@ prepare_quality_candidate <- function(data, contract) {
     units <- quality_formula_units(data, rule$check)$.dr_pass
     bad <- is.na(units) | !units
     rejected <- rejected | bad
-    item <- dr_run_quality(rule, data)
+    item <- from_counts(rule$name, sum(bad), length(bad), rule$severity, 0)
+    item$engine <- "r"
     if (any(bad)) {
       item$status <- "warning"
     }
