@@ -19,7 +19,8 @@ dr_contract(
   allow_empty = FALSE,
   allow_extra = FALSE,
   operator = NULL,
-  column_metadata = list()
+  column_metadata = list(),
+  governance = list()
 )
 }
 \arguments{
@@ -65,6 +66,9 @@ and producer.}
 
 \item{column_metadata}{Optional named lists for declared columns, such as
 \code{list(amount = list(description = "Order value", unit = "EUR"))}.}
+
+\item{governance}{Named metadata: steward, classification, pii, tags, glossary,
+retention, roles and sla. Descriptive policies are not automatically enforced.}
 }
 \value{
 A serializable contract specification.

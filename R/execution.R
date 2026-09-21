@@ -437,6 +437,13 @@ dr_execute_target.default <- function(target, product, ...) {
       acquired <- read_product_sources(product)
       data <- acquired$data
       input <- acquired$inputs
+      lineage_recipe <- dr_recipe()
+      lineage_recipe$steps <- product$transforms
+      column_lineage <- if (is.data.frame(data) || inherits(data, "tbl_lazy")) {
+        dr_column_lineage(lineage_recipe, colnames(data))
+      } else {
+        list(complete = FALSE, fields = list(), reason = "Multiple sources")
+      }
       for (name in names(product$transforms)) {
         data <- apply_product_transform(
           product$transforms[[name]],
@@ -452,14 +459,18 @@ dr_execute_target.default <- function(target, product, ...) {
       }
       data <- table_result(data, "The final transformation")
       contract <- product_contract(product, data)
-      quality <- dr_validate(data, contract, keep_errors = TRUE)
+      partition <- prepare_quality_candidate(data, contract)
+      data <- partition$data
+      quality <- partition$quality
       if (!quality_ok(quality)) {
         blocked <- run_result(run, "blocked", quality = quality)
+        blocked$quarantine <- partition$quarantine
         blocked$diagnostic <- list(data = data, contract = contract)
         blocked
       } else {
         metadata <- list(
           product = product$id,
+          column_lineage = column_lineage,
           transformations = transform_metadata,
           schema = infer_column_types(data),
           rows = count_rows(data),
@@ -495,7 +506,15 @@ dr_execute_target.default <- function(target, product, ...) {
               "The writer returned invalid or failing candidate quality evidence."
             )
           }
-          quality <- output$candidate_quality
+          quarantine_evidence <- quality[
+            quality$stage == "quarantine",
+            ,
+            drop = FALSE
+          ]
+          quality <- dplyr::bind_rows(
+            output$candidate_quality,
+            quarantine_evidence
+          )
         }
         metadata$submitted_rows <- metadata$rows
         metadata$rows <- output$rows %||% metadata$rows
@@ -505,6 +524,7 @@ dr_execute_target.default <- function(target, product, ...) {
           if (is.null(target)) "completed" else "published",
           quality = quality
         )
+        result$quarantine <- partition$quarantine
         result$data <- data
         result$outputs <- output
         result$metadata <- metadata

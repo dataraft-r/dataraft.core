@@ -366,6 +366,52 @@ safe_run_evidence <- function(result, product = NULL) {
     release_id = safe_scalar(result$release_id),
     deliveries = list()
   )
+  governance <- contract$governance %||% list()
+  public_governance <- safe_fields(
+    governance,
+    c("steward", "classification", "pii", "retention")
+  )
+  for (field in c("tags", "glossary")) {
+    value <- unlist(governance[[field]], recursive = FALSE, use.names = FALSE)
+    if (is.character(value) && !is.object(value)) {
+      public_governance[[field]] <- unname(as.list(safe_text(value)))
+    }
+  }
+  if (is.list(governance$openmetadata_owners)) {
+    public_governance$openmetadata_owners <- unname(lapply(
+      governance$openmetadata_owners,
+      safe_fields,
+      fields = c("id", "type")
+    ))
+  }
+  if (length(public_governance)) {
+    record$contract$governance <- public_governance
+  }
+  if (is.list(contract$column_metadata)) {
+    record$contract$column_metadata <- lapply(
+      contract$column_metadata,
+      safe_fields,
+      fields = c("description", "classification", "businessName")
+    )
+  }
+  lineage <- metadata$column_lineage
+  if (
+    is.list(lineage) &&
+      isTRUE(lineage$complete) &&
+      is.list(lineage$fields) &&
+      !is.null(names(lineage$fields)) &&
+      !anyDuplicated(names(lineage$fields)) &&
+      all(vapply(
+        lineage$fields,
+        function(x) is.character(x) && !is.object(x) && !anyNA(x),
+        logical(1)
+      ))
+  ) {
+    record$column_lineage <- list(
+      complete = TRUE,
+      fields = lapply(lineage$fields, safe_text)
+    )
+  }
   if (!is.null(result$error)) {
     record$error <- list(
       class = class(result$error)[[1L]],
@@ -452,6 +498,7 @@ safe_descriptor <- function(x) {
     "backend",
     "version",
     "release_id",
+    "snapshot",
     "run_id",
     "product",
     "asset"
