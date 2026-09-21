@@ -165,7 +165,7 @@ dr_model <- function(
     )
   }
   refs <- lapply(names(tables), function(n) {
-    dataraft.lake::resolve_release(
+    dataraft.lake::dr_internal_resolve_release(
       lake,
       tables[[n]],
       if (is.null(releases)) NULL else releases[[n]]
@@ -188,7 +188,6 @@ dr_model <- function(
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name dm_keys
 
 dm_keys <- function(model, primary_keys, foreign_keys, check) {

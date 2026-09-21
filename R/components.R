@@ -64,7 +64,6 @@ dr_execute_transform.default <- function(transform, data, ...) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name component_sources
 
 component_sources <- function(x, ...) UseMethod("component_sources")
@@ -116,7 +115,6 @@ transform_source_names <- function(step, sources) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name product_sources
 
 product_sources <- function(product) {
@@ -142,7 +140,6 @@ product_sources <- function(product) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name replace_product_sources
 
 replace_product_sources <- function(product, sources) {
@@ -168,7 +165,6 @@ replace_product_sources <- function(product, sources) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name normalize_result_source
 
 normalize_result_source <- function(result) {
@@ -318,7 +314,6 @@ dr_check_component.dr_rule <- function(x, ...) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name component_method
 
 component_method <- function(generic, x) {
@@ -357,7 +352,6 @@ assert_component <- function(x, generic) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name frame_result
 
 frame_result <- function(data, label) {
@@ -393,7 +387,6 @@ is_lazy_table <- function(x) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name table_result
 
 table_result <- function(data, label) {

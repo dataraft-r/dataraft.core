@@ -3,18 +3,6 @@
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
-#' @name null-coalesce
-
-`%||%` <- function(x, y) if (is.null(x)) y else x
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
 #' @name abort
 
 abort <- function(
@@ -24,6 +12,10 @@ abort <- function(
   subclass = NULL,
   call = rlang::caller_env()
 ) {
+  result <- list(...)$result
+  if (inherits(result, c("dr_run_result", "dr_model_result"))) {
+    .last_failure$result <- result
+  }
   rlang::abort(
     message,
     class = unique(c(class, subclass, "dataraft_error")),
@@ -38,7 +30,6 @@ abort <- function(
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name need
 
 need <- function(package, purpose = NULL) {
@@ -87,7 +78,6 @@ need <- function(package, purpose = NULL) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name scalar
 
 scalar <- function(x, what) {
@@ -107,7 +97,6 @@ scalar <- function(x, what) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name absolute_path
 
 absolute_path <- function(path) {
@@ -146,7 +135,6 @@ absolute_path <- function(path) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name ident
 
 ident <- function(x) {
@@ -167,7 +155,6 @@ ident <- function(x) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name column_name
 
 column_name <- function(x) scalar(x, "Column name")
@@ -178,7 +165,6 @@ column_name <- function(x) scalar(x, "Column name")
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name asset_id
 
 asset_id <- function(x) {
@@ -199,18 +185,6 @@ asset_id <- function(x) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
-#' @name now
-
-now <- function() format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
 #' @name uid
 
 uid <- function() {
@@ -234,134 +208,6 @@ uid <- function() {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
-#' @name canonical
-
-canonical <- function(x) {
-  rlang::local_error_call(rlang::caller_env())
-  if (is.function(x)) {
-    return(list(
-      formals = paste(deparse(formals(x)), collapse = "\n"),
-      body = paste(deparse(body(x)), collapse = "\n")
-    ))
-  }
-  if (rlang::is_quosure(x)) {
-    return(list(
-      expression = paste(
-        deparse(rlang::get_expr(x), width.cutoff = 500L),
-        collapse = "\n"
-      ),
-      format = 2L
-    ))
-  }
-  if (inherits(x, "formula")) {
-    return(list(
-      formula = paste(deparse(x, width.cutoff = 500L), collapse = "\n")
-    ))
-  }
-  if (is.list(x)) {
-    return(lapply(x, canonical))
-  }
-  x
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name jencode
-
-jencode <- function(x) {
-  rlang::local_error_call(rlang::caller_env())
-  as.character(jsonlite::toJSON(
-    canonical(x),
-    auto_unbox = TRUE,
-    null = "null",
-    na = "null",
-    digits = NA
-  ))
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name jdecode
-
-jdecode <- function(x) jsonlite::fromJSON(x, simplifyVector = FALSE)
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name fingerprint
-
-fingerprint <- function(x) {
-  rlang::local_error_call(rlang::caller_env())
-  digest::digest(jencode(x), algo = "sha256", serialize = FALSE)
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name count_rows
-
-count_rows <- function(x) {
-  rlang::local_error_call(rlang::caller_env())
-  as.numeric(dplyr::collect(dplyr::summarise(
-    dplyr::ungroup(x),
-    n = dplyr::n()
-  ))$n[[1]])
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name null_counts
-
-null_counts <- function(data, columns) {
-  rlang::local_error_call(rlang::caller_env())
-  data <- dplyr::ungroup(data)
-  if (!length(columns)) {
-    return(stats::setNames(numeric(), character()))
-  }
-  if (!inherits(data, "tbl_sql")) {
-    return(vapply(data[columns], function(x) sum(is.na(x)), numeric(1)))
-  }
-  expressions <- stats::setNames(
-    lapply(columns, function(column) {
-      rlang::expr(sum(as.integer(is.na(!!rlang::sym(column))), na.rm = TRUE))
-    }),
-    columns
-  )
-  result <- dplyr::collect(dplyr::summarise(data, !!!expressions))
-  stats::setNames(as.numeric(result[1, ]), columns)
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
 #' @name flag
 
 flag <- function(value, name) {
@@ -376,37 +222,4 @@ flag <- function(value, name) {
   value
 }
 
-
 # Keep registry fingerprints stable; report values need full double precision.
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name report_json
-
-report_json <- function(x) {
-  rlang::local_error_call(rlang::caller_env())
-  as.character(jsonlite::toJSON(
-    canonical(x),
-    auto_unbox = TRUE,
-    null = "null",
-    na = "null",
-    digits = I(17)
-  ))
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @export
-#' @name report_fingerprint
-
-report_fingerprint <- function(x) {
-  rlang::local_error_call(rlang::caller_env())
-  digest::digest(report_json(x), algo = "sha256", serialize = FALSE)
-}

@@ -3,7 +3,6 @@
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name run_result
 
 run_result <- function(run, status, release = NA_character_, quality = NULL) {

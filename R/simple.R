@@ -3,7 +3,6 @@
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name simple_reader
 
 simple_reader <- function(path) {
@@ -28,7 +27,6 @@ simple_reader <- function(path) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name automatic_types
 
 automatic_types <- function(columns) {
@@ -43,7 +41,6 @@ automatic_types <- function(columns) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name automatic_schema
 
 automatic_schema <- function(name, columns) {

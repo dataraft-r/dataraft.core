@@ -56,7 +56,6 @@ dr_contract_from <- function(
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name infer_column_types
 
 infer_column_types <- function(data) {
@@ -187,7 +186,6 @@ dr_contract_confirm <- function(contract) {
 #' Internal implementation interface for the DataRaft package family.
 #' @usage NULL
 #' @keywords internal
-#' @export
 #' @name assert_contract_ready
 
 assert_contract_ready <- function(contract) {
