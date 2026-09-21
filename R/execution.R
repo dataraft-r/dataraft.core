@@ -226,14 +226,35 @@ dr_collect <- function(x, ...) dplyr::collect(x, ...)
 
 #' @rdname dr_collect
 #' @export
+collect.dr_product <- function(x, ...) {
+  abort(
+    c(
+      "A product is a definition, not an executed result.",
+      i = "Run result <- dr_trial(x), then dr_collect(result). Add a source with dr_add_source() if needed."
+    ),
+    subclass = "dataraft_error_definition"
+  )
+}
+
+#' @rdname dr_collect
+#' @export
+collect.dr_product_workflow <- collect.dr_product
+
+
+#' @rdname dr_collect
+#' @export
 collect.dr_run_result <- function(x, ...) {
   if (!x$status %in% c("completed", "published", "cached")) {
     abort(
-      subclass = "dataraft_error_definition",
-      paste(
+      subclass = failure_subclass(x),
+      c(
         run_result_message(x),
-        "Inspect dr_quality_report(result) for checks and dr_quality_rows(result) for affected rows."
-      )
+        i = "Save result <- dr_trial(...) before collecting, then inspect dr_quality_report(result) and dr_quality_rows(result).",
+        i = "Inspect dr_quality_errors(result) for locally retained rule exceptions."
+      ),
+      result = x,
+      checks = x$quality,
+      parent = run_result_parent(x)
     )
   }
   if (!is.null(x$data)) {

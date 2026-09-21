@@ -2,6 +2,8 @@
 
 S3method(arrange,dr_product)
 S3method(collect,dr_model_result)
+S3method(collect,dr_product)
+S3method(collect,dr_product_workflow)
 S3method(collect,dr_run_result)
 S3method(component_sources,default)
 S3method(component_sources,dr_lookup_transform)

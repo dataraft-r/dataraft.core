@@ -2,18 +2,26 @@
 % Please edit documentation in R/contracts.R
 \name{dr_quality_errors}
 \alias{dr_quality_errors}
-\title{Inspect locally retained quality exceptions}
+\title{Inspect locally retained quality exceptions
+Original conditions are available only in memory, never in exported quality
+reports. Trial results retain them automatically. Use \code{conditionMessage()}
+locally to inspect a missing column or another rule execution error.}
 \usage{
 dr_quality_errors(quality)
 }
 \arguments{
-\item{quality}{Results from \code{dr_validate(..., keep_errors = TRUE)}.}
+\item{quality}{Results from \code{dr_validate(..., keep_errors = TRUE)}, a trial/run
+result, or a caught DataRaft condition containing \code{result}. Model results
+prefix each rule with its member table name.}
 }
 \value{
 A named list of original R conditions, empty when none were retained.
 }
 \description{
 Inspect locally retained quality exceptions
+Original conditions are available only in memory, never in exported quality
+reports. Trial results retain them automatically. Use \code{conditionMessage()}
+locally to inspect a missing column or another rule execution error.
 }
 \examples{
 contract <- dr_contract("example", columns = c(id = "integer"),

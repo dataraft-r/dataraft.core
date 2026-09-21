@@ -7,8 +7,8 @@
 \title{Define a quality rule}
 \usage{
 dr_quality_rule(
-  name,
-  check,
+  name = NULL,
+  check = NULL,
   severity = c("error", "warning"),
   max_failure = 0,
   description = "",
@@ -26,7 +26,8 @@ dr_pointblank_checks(
 )
 }
 \arguments{
-\item{name}{Rule name.}
+\item{name}{Rule name, or a one-sided formula as a shortcut. When omitted,
+formula rules use their expression as a label. Explicit names stay unchanged.}
 
 \item{check}{Function taking a table and returning a logical vector or
 dr_quality_counts(), or a one-sided row predicate such as \code{~ amount >= 0}.
