@@ -11,7 +11,7 @@
 #' @returns A run result containing execution evidence and an output reference.
 #' @examples
 #' product <- dr_product("orders") |> dr_add_source(data.frame(id = 1:2))
-#' dr_execute_target(NULL, dr_validate(product))
+#' dataraft.core::dr_execute_target(NULL, dr_validate(product))
 #' @export
 #' @keywords internal
 #' @name dr_execute_target
