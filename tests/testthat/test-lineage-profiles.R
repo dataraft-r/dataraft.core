@@ -19,3 +19,34 @@ test_that("profiles distinguish drift, schema changes and insufficient observati
   expect_equal(dr_profile_compare(before, before)$status, "stable")
   expect_error(dr_profile_compare(before, after, -1), "threshold")
 })
+
+test_that("catalog delivery retains safe lineage and governance across evidence sanitization", {
+  received <- NULL
+  contract <- dr_contract(
+    "orders",
+    columns = c(amount = "numeric", net = "numeric"),
+    governance = list(
+      retention = "P7Y",
+      tags = c("Finance.Reporting"),
+      odcs = list(servers = list(password = "never-export"))
+    ),
+    column_metadata = list(amount = list(classification = "PII.Sensitive"))
+  )
+  product <- dr_product(
+    "orders",
+    data.frame(amount = 10),
+    contract = contract
+  ) |>
+    dplyr::mutate(net = amount / 2) |>
+    dr_add_catalog(function(metadata) received <<- metadata)
+  result <- dr_run(product)
+  expect_equal(result$status, "completed")
+  expect_equal(received$column_lineage$fields$net, "amount")
+  expect_equal(received$contract$governance$retention, "P7Y")
+  expect_equal(
+    received$contract$column_metadata$amount$classification,
+    "PII.Sensitive"
+  )
+  expect_null(received$contract$governance$odcs)
+  expect_false(grepl("never-export", jsonlite::toJSON(received), fixed = TRUE))
+})
