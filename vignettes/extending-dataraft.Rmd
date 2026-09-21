@@ -8,7 +8,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", error = FALSE)
 library(dataraft.core)
 ```
 
@@ -30,6 +30,8 @@ system. Products and workflows stay independent of that system.
 
 This small source keeps a table in an environment, standing in for an external
 client. Inspection exposes a name, not the environment's data.
+The explicit registrations make the methods available when this article executes
+in a local environment. A package uses NAMESPACE S3 registrations instead.
 
 ```{r}
 example_source <- function(client, name) {
@@ -47,6 +49,10 @@ dr_inspect.example_source <- function(x, ...) list(type = "example", name = x$na
 dr_capabilities.example_source <- function(x, ...) {
   dr_component_capabilities(read = TRUE, write = FALSE, lazy = FALSE,
     transactions = FALSE, partition = FALSE, immutable = FALSE)
+}
+for (generic in c("dr_check_component", "dr_read_source", "dr_inspect", "dr_capabilities")) {
+  registerS3method(generic, "example_source",
+    get(paste0(generic, ".example_source")), envir = asNamespace("dataraft.core"))
 }
 client <- new.env(parent = emptyenv())
 client$orders <- data.frame(id = 1:2, amount = c(10, 20))
@@ -73,6 +79,10 @@ dr_capabilities.example_target <- function(x, ...) {
 dr_write_target.example_target <- function(target, data, context, ...) {
   target$client[[target$name]] <- data
   list(type = "example", name = target$name, rows = nrow(data))
+}
+for (generic in c("dr_check_component", "dr_inspect", "dr_capabilities", "dr_write_target")) {
+  registerS3method(generic, "example_target",
+    get(paste0(generic, ".example_target")), envir = asNamespace("dataraft.core"))
 }
 product <- dr_product("orders", source) |>
   dr_add_quality(~ amount >= 0) |>
