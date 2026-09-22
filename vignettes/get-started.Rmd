@@ -44,3 +44,62 @@ Use `dr_trial()` to test without configured writers, `dr_run()` to execute the
 configured workflow, and `dr_publish()` to require a destination. Storage and
 catalog components are optional. The metapackage's RDS example shows a durable
 next step; the extension article explains how to provide your own adapter.
+
+## Build definitions in small steps
+
+The constructors also accept governance metadata and advanced backend settings.
+Keep these optional arguments out of the first delivery definition. Start with
+shape and identity, then compose the parts that change independently:
+
+```{r}
+shape <- dr_contract(
+  "orders",
+  columns = c(id = "integer", amount = "numeric", region = "character")
+)
+positive <- dr_quality_rule(~ amount >= 0, action = "block", threshold = 0)
+orders <- dr_product("orders") |>
+  dr_add_contract(shape) |>
+  dr_add_quality(positive)
+regions <- data.frame(id = 1:2, region = c("North", "South"))
+preparation <- dr_recipe() |>
+  dr_step_lookup(regions, by = "id")
+flow <- dr_workflow() |>
+  dr_add_product(orders) |>
+  dr_add_recipe(preparation) |>
+  dr_add_source(data.frame(id = 1:2, amount = c(10, 20)), name = "delivery")
+dr_trial(flow) |> dr_collect()
+```
+
+The contract describes the final output, including `region` added by the lookup.
+The input delivery supplies only `id` and `amount`; checks run after preparation.
+
+`dr_contract()` needs only the identity and expected columns here; supply `key`,
+`grain` or governance fields when those guarantees are known. `dr_product()` needs
+only identity because attachments are separate. For `dr_quality_rule()`, use
+`action` and `threshold` consistently. `severity` and `max_failure` remain
+compatibility arguments, and supplying both names for the same setting fails.
+For `dr_step_lookup()`, start with `source` and `by`; defaults enforce a complete
+many-to-one match. Set `unmatched`, `suffix`, `engine`, `name` or `table` only when
+that lookup needs a different explicit policy. The full signatures remain
+available so existing positional calls do not break.
+
+Revise definitions explicitly, then replace the appropriate slot:
+
+```{r}
+revision <- dr_extract_contract(orders) |>
+  dr_update_contract(version = "2", owner = "Risk")
+orders <- dr_update_contract(orders, revision)
+flow <- dr_update_product(flow, orders) |>
+  dr_update_source(data.frame(id = 1:2, amount = c(30, 40)), name = "delivery")
+dr_extract_source(flow, "delivery")
+```
+
+`dr_contract_update()` is the deprecated compatibility spelling of contract
+revision. New code uses `dr_update_contract()`. A contract revision requires a
+new ID or version; changing guarantees can also require explicit key, required
+column or rule review. `dr_remove_contract()` clears the attached contract,
+restoring automatic shape inference, while preserving added quality rules.
+`dr_add_contract()` keeps its existing replacement behavior; use
+`dr_update_contract()` when an existing attachment is required. A workflow's
+contract is attached to its product. Primary source helpers edit sources owned
+by their argument only; extract a workflow's product to edit its own sources.

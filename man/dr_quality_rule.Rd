@@ -40,9 +40,14 @@ predicates repeated for each row. Missing logical values count as failures.
 Lazy formulas run on the backend; arbitrary functions remain responsible
 for their own collection.}
 
-\item{severity}{error blocks publication; warning permits publication.}
+\item{severity}{Compatibility argument: \code{"error"} corresponds to
+\code{action = "block"}, \code{"warning"} to \code{action = "warn"}. Prefer \code{action}
+for new \code{dr_quality_rule()} definitions. Supplying both is an error.
+\code{dr_pointblank_checks()} continues to use \code{severity}.}
 
-\item{max_failure}{Fraction of permitted failed test units.}
+\item{max_failure}{Compatibility argument for \code{threshold}. Prefer \code{threshold}
+for new \code{dr_quality_rule()} definitions. Supplying both is an error.
+\code{dr_pointblank_checks()} continues to use \code{max_failure}.}
 
 \item{description}{Rule description.}
 
@@ -57,7 +62,7 @@ removes every failing row before writing and retains it locally on the result.
 It supports native row formulas only. Standalone validation still blocks
 rejected rows until an execution path actually removes them.}
 
-\item{threshold}{Alias for max_failure, a fraction from zero to one. For
+\item{threshold}{Permitted fraction of failed test units, from zero to one. For
 quarantine, every rejected row is removed regardless of threshold.}
 
 \item{dimension}{Optional ODCS quality dimension.}

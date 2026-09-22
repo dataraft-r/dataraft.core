@@ -26,6 +26,8 @@
 #' @param ... Other named arguments of [dr_contract()] to replace in full, such as
 #'   `required`, `key`, `grain`, `rules`, `owner` or `column_metadata`.
 #' @returns A new `contract` specification. Use [dr_contract_diff()] to review it.
+#' This legacy name is retained for compatibility. Prefer [dr_update_contract()]
+#' in new code; argument positions and revision checks remain unchanged.
 #' @seealso [dr_contract()], [dr_contract_diff()]
 #' @export
 #' @examples

@@ -235,11 +235,16 @@ dr_contract <- function(
 #'   removes every failing row before writing and retains it locally on the result.
 #'   It supports native row formulas only. Standalone validation still blocks
 #'   rejected rows until an execution path actually removes them.
-#' @param threshold Alias for max_failure, a fraction from zero to one. For
+#' @param threshold Permitted fraction of failed test units, from zero to one. For
 #'   quarantine, every rejected row is removed regardless of threshold.
 #' @param dimension Optional ODCS quality dimension.
-#' @param severity error blocks publication; warning permits publication.
-#' @param max_failure Fraction of permitted failed test units.
+#' @param severity Compatibility argument: `"error"` corresponds to
+#'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
+#'   for new `dr_quality_rule()` definitions. Supplying both is an error.
+#'   `dr_pointblank_checks()` continues to use `severity`.
+#' @param max_failure Compatibility argument for `threshold`. Prefer `threshold`
+#'   for new `dr_quality_rule()` definitions. Supplying both is an error.
+#'   `dr_pointblank_checks()` continues to use `max_failure`.
 #' @param description Rule description.
 #' @param engine Formula evaluation engine: `"native"` (default) or optional
 #'   `"pointblank"`. Both require logical row predicates and count missing
