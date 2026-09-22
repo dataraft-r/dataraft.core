@@ -518,6 +518,26 @@ dr_inspect.function <- function(x, ...) {
   list(type = "R function", code = canonical(x))
 }
 
+# Runtime connection factories can be described without claiming their
+# external state has a reproducible semantic fingerprint. Transform and rule
+# inspection remains strict; this fallback applies only in source positions.
+inspect_source <- function(source) {
+  tryCatch(dr_inspect(source), dataraft_error_fingerprint = function(e) {
+    if (!is.function(source)) {
+      stop(e)
+    }
+    list(
+      type = "R function",
+      code = list(
+        formals = paste(deparse(formals(source)), collapse = "\n"),
+        body = paste(deparse(body(source)), collapse = "\n")
+      ),
+      fingerprintable = FALSE,
+      dynamic = TRUE
+    )
+  })
+}
+
 #' @export
 dr_inspect.dr_source <- function(x, ...) {
   list(type = "file", id = x$id, path = x$path, reader = canonical(x$reader))
@@ -529,7 +549,7 @@ dr_inspect.dr_product <- function(x, ...) {
     if (inherits(source, "dr_product")) {
       list(type = "product", id = source$id, version = source$version)
     } else {
-      dr_inspect(source)
+      inspect_source(source)
     }
   })
   list(
@@ -724,7 +744,7 @@ product_plan <- function(x, check = TRUE) {
       if (inherits(source, "dr_product")) {
         "product"
       } else {
-        dr_inspect(source)$type
+        inspect_source(source)$type
       }
     },
     character(1)

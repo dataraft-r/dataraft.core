@@ -65,3 +65,24 @@ test_that("specification printing shows engines without reading references", {
     "Engine: native"
   )
 })
+
+test_that("engine updates preserve policy and extension metadata", {
+  spec <- dr_quality_rule(
+    "positive",
+    ~ amount > 0,
+    action = "quarantine",
+    dimension = "accuracy"
+  )
+  spec$policy <- list(owner = "risk", approval = TRUE)
+  spec$reference <- list(by = "id")
+  spec$custom <- list(retain = 1L)
+  updated <- dr_set_engine(spec, "pointblank")
+  fields <- setdiff(names(spec), c("engine", "engine_explicit"))
+  expect_identical(updated[fields], spec[fields])
+  expect_identical(updated$action, "quarantine")
+  expect_identical(dr_set_engine(updated, "native")[fields], spec[fields])
+  expect_error(
+    dr_set_engine(dr_quality_rule("x", function(x) TRUE), "pointblank"),
+    class = "dataraft_error_contract"
+  )
+})

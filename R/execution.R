@@ -11,7 +11,7 @@
 #' @returns A run result containing execution evidence and an output reference.
 #' @examples
 #' product <- dr_product("orders") |> dr_add_source(data.frame(id = 1:2))
-#' dr_execute_target(NULL, dr_validate(product))
+#' dataraft.core::dr_execute_target(NULL, dr_validate(product))
 #' @export
 #' @keywords internal
 #' @name dr_execute_target
@@ -773,7 +773,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
         archives[[name]] <- archive
         if (!reported && !is.null(on_input)) on_input(name, archive)
       }
-      description <- dr_inspect(source)
+      description <- inspect_source(source)
       provenance <- attr(data, "dr_source_metadata")
       if (!is.null(provenance)) description$provenance <- provenance
     }

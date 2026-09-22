@@ -5,7 +5,9 @@
 #' acquired table. Nothing is read until [dr_run()] or [dr_publish()].
 #'
 #' Expressions retain their R environments. Inspection records expressions,
-#' not captured values or credentials. Changing an external binding can change
+#' plus non-disclosing hashes of referenced lexical bindings. Known input columns
+#' take precedence over ambient names; use `.env$name` for explicit lexical
+#' bindings and `.data$name` for columns. Changing an external binding can change
 #' a later run: use an explicit `code_version` when enabling lake caching, and
 #' an explicit targets cue for dynamic environment or external state. To freeze
 #' a small value in an expression, inject it with `!!`.
@@ -54,9 +56,33 @@ left_join.dr_product <- function(
 
 dplyr_product_step <- function(x, verb, args) {
   rlang::local_error_call(rlang::caller_env())
+  # A column wins over an identically named ambient binding in a data mask.
+  # Use only known schemas here; never read a source during definition.
+  masked <- unique(c(
+    unlist(
+      lapply(x$sources, function(source) {
+        if (is.data.frame(source)) names(source) else character()
+      }),
+      use.names = FALSE
+    ),
+    names(x$contract$columns),
+    unlist(
+      lapply(x$transforms, function(step) {
+        if (inherits(step, "dr_dplyr_transform")) {
+          c(step$masked, names(step$args))
+        } else {
+          character()
+        }
+      }),
+      use.names = FALSE
+    )
+  ))
   dr_add_transform(
     x,
-    structure(list(verb = verb, args = args), class = "dr_dplyr_transform"),
+    structure(
+      list(verb = verb, args = args, masked = masked),
+      class = "dr_dplyr_transform"
+    ),
     name = paste0(verb, "_", length(x$transforms) + 1L)
   )
 }
@@ -240,7 +266,10 @@ dr_check_component.dr_dplyr_transform <- function(x, ...) {
 
 #' @export
 dr_inspect.dr_dplyr_transform <- function(x, ...) {
-  list(type = paste0("dplyr::", x$verb), arguments = canonical(x$args))
+  list(
+    type = paste0("dplyr::", x$verb),
+    arguments = canonical(x$args, masked = x$masked %||% character())
+  )
 }
 
 #' @export

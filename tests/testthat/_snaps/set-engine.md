@@ -12,6 +12,6 @@
       dr_set_engine(dr_quality_rule("positive", function(data) all(data$amount > 0)),
       "pointblank")
     Condition
-      Error:
+      Error in `dr_set_engine()`:
       ! Pointblank formula rules need a one-sided formula. Use dr_pointblank_checks() for an agent builder.
 

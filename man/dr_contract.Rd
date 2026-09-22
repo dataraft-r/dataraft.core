@@ -20,7 +20,8 @@ dr_contract(
   allow_extra = FALSE,
   operator = NULL,
   column_metadata = list(),
-  governance = list()
+  governance = list(),
+  constraints = list()
 )
 }
 \arguments{
@@ -43,7 +44,12 @@ factors in memory, but database storage need not preserve levels or order.
 Integer64 columns remain distinct from doubles; no numeric conversion is
 performed. Caller-owned DuckDB connections must use
 \code{DBI::dbConnect(duckdb::duckdb(), bigint = "integer64")} to preserve them.
-List columns require a target that supports nested data.}
+List columns require a target that supports nested data. \code{numeric} accepts
+plain integer and double vectors; \code{integer} accepts only integer vectors.
+\code{POSIXct} checks the class, not timezone or fractional-second precision.
+Lazy tables use the driver's zero-row prototype for type checks. Use
+\code{required} for nullability and \code{rules} for ranges and enum membership;
+units and currency in \code{column_metadata} are descriptive, not enforced.}
 
 \item{required}{Non-null columns.}
 
@@ -69,6 +75,15 @@ and producer.}
 
 \item{governance}{Named metadata: steward, classification, pii, tags, glossary,
 retention, roles and sla. Descriptive policies are not automatically enforced.}
+
+\item{constraints}{Optional named lists per column. \code{nullable} overrides
+\code{required} (keys remain non-null), \code{min}/\code{max} are inclusive typed bounds,
+and \code{enum} declares allowed nonmissing values. These checks also support
+lazy tables. \code{timezone} requires an exact POSIXct timezone attribute;
+\code{precision} permits 0 to 6 decimal places (fractional seconds for POSIXct),
+with absolute tolerance \code{1e-8}. Timezone and precision require collected
+data and block on lazy tables. Missing values are handled by nullability.
+Currency and units remain descriptive \code{column_metadata}.}
 }
 \value{
 A serializable contract specification.
@@ -83,4 +98,8 @@ contract <- dr_contract(
   c(order_id = "integer", amount = "numeric"), key = "order_id"
 )
 contract
+dr_contract(columns = c(amount = "numeric", status = "character"),
+  constraints = list(amount = list(min = 0, precision = 2),
+    status = list(enum = c("active", "paid"))),
+  column_metadata = list(amount = list(unit = "EUR")))
 }

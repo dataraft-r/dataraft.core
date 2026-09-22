@@ -504,6 +504,9 @@ safe_descriptor <- function(x) {
     "asset"
   )
   out <- safe_fields(x, fields)
+  if (is.list(x) && is.list(x$dataset)) {
+    out$dataset <- safe_fields(x$dataset, c("namespace", "name"))
+  }
   if (is.list(x) && is.list(x$source)) {
     out$source <- safe_descriptor(x$source)
   } else if (is.list(x) && is.character(x$source) && length(x$source) == 1L) {

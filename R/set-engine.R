@@ -35,9 +35,16 @@ dr_set_engine.dr_rule <- function(x, engine, ...) {
       "This quality extension needs its own dr_set_engine() method."
     )
   }
-  args <- x[c("name", "check", "severity", "max_failure", "description")]
-  args$engine <- engine
-  do.call(dr_quality_rule, args)
+  engine <- normalize_quality_engine(engine)
+  if (engine == "pointblank" && !inherits(x$check, "formula")) {
+    abort(
+      subclass = "dataraft_error_contract",
+      "Pointblank formula rules need a one-sided formula. Use dr_pointblank_checks() for an agent builder."
+    )
+  }
+  x$engine <- engine
+  x$engine_explicit <- TRUE
+  x
 }
 
 
