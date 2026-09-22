@@ -214,7 +214,7 @@ dr_add_transform <- function(x, transform, name = NULL) {
 #' The contract describes shape and keys; quality rules describe acceptable
 #' values. Checks apply after preparation and gate framework writers.
 #' Adding a contract replaces the previous contract. Quality rules accumulate.
-#' @param x A [dr_product()] specification.
+#' @param x A [dr_product()] specification or modular [dr_workflow()].
 #' @param contract Contract, named type vector, or named list of prototypes.
 #' @param quality One-sided row predicate, function, rule, or list of rules.
 #'   Formula `NA` results count as failures. Functions return scalar logicals
@@ -228,6 +228,11 @@ dr_add_transform <- function(x, transform, name = NULL) {
 #'   dr_add_contract(c(id = "integer", amount = "numeric")) |>
 #'   dr_add_quality(~ amount >= 0)
 dr_add_contract <- function(x, contract) {
+  if (inherits(x, "dr_product_workflow")) {
+    x$product <- dr_add_contract(dr_extract_product(x), contract)
+    check_workflow_slots(x)
+    return(x)
+  }
   x <- editable_product(x)
   if (!inherits(contract, "dr_contract")) {
     contract <- dr_contract(paste0(x$id, ".contract"), columns = contract)

@@ -1,3 +1,10 @@
+# dataraft.core 0.1.0.9001
+
+* `dr_update_contract()` is the preferred name for explicit contract revisions and can replace a product or workflow contract. `dr_contract_update()` remains a deprecated compatibility spelling without runtime warnings.
+* `dr_extract_contract()` and `dr_remove_contract()` complete contract composition; `dr_add_contract()` also accepts workflows.
+* `dr_update_source()`, `dr_extract_source()` and `dr_remove_source()` edit named primary sources without reading them. Ambiguous source selection fails explicitly.
+* Quality-rule documentation consistently recommends `action` and `threshold`; `severity` and `max_failure` remain compatibility arguments, with conflicting pairs rejected.
+
 # dataraft.core 0.1.0.9000
 
 * Definition fingerprints now include referenced lexical bindings, defaults and reference data as non-disclosing hashes. Unsupported mutable captures fail with `dataraft_error_fingerprint`; existing definition fingerprints change. Bump registered contract/product versions intentionally when adopting this format; old fingerprints are not silently treated as equivalent.

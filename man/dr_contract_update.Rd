@@ -49,6 +49,9 @@ a removal, type change or grain change. Rules may contain arbitrary R code,
 so their dependencies cannot safely be inferred. This review prevents silent
 inheritance of guarantees, but is not proof that revised rules are correct.
 Metadata for removed columns is discarded; other metadata is inherited.
+
+This legacy name is retained for compatibility. Prefer \code{\link[=dr_update_contract]{dr_update_contract()}}
+in new code; argument positions and revision checks remain unchanged.
 }
 \examples{
 orders <- dr_contract("orders", columns = c(id = "integer"), key = "id")

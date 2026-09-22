@@ -40,9 +40,12 @@ predicates repeated for each row. Missing logical values count as failures.
 Lazy formulas run on the backend; arbitrary functions remain responsible
 for their own collection.}
 
-\item{severity}{error blocks publication; warning permits publication.}
+\item{severity}{Compatibility argument: \code{"error"} corresponds to
+\code{action = "block"}, \code{"warning"} to \code{action = "warn"}. Prefer \code{action}
+for new rules. Supplying both arguments is an error.}
 
-\item{max_failure}{Fraction of permitted failed test units.}
+\item{max_failure}{Compatibility argument for \code{threshold}. Prefer \code{threshold}
+for new rules. Supplying both arguments is an error.}
 
 \item{description}{Rule description.}
 
@@ -57,7 +60,7 @@ removes every failing row before writing and retains it locally on the result.
 It supports native row formulas only. Standalone validation still blocks
 rejected rows until an execution path actually removes them.}
 
-\item{threshold}{Alias for max_failure, a fraction from zero to one. For
+\item{threshold}{Permitted fraction of failed test units, from zero to one. For
 quarantine, every rejected row is removed regardless of threshold.}
 
 \item{dimension}{Optional ODCS quality dimension.}
@@ -66,7 +69,7 @@ quarantine, every rejected row is removed regardless of threshold.}
 
 \item{build}{Function creating a pointblank agent from a lazy table.}
 
-\item{policy}{\code{"rule"} preserves the explicit \code{severity} / \code{max_failure}
+\item{policy}{\code{"rule"} preserves the explicit \code{action} / \code{threshold}
 gate. \code{"agent"} uses pointblank's per-step action levels: warnings permit
 publication, stop/error and critical states block. Native pointblank
 threshold rounding applies. An unconfigured, inactive or errored agent
