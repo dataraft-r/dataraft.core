@@ -105,7 +105,8 @@ test_that("grouping, count and distinct pass options through at execution", {
 })
 
 test_that("successful results normalize without reruns and preserve provenance", {
-  first <- dr_run(dr_product("input", data.frame(id = 1:2)))
+  first <- dr_run(dr_product("input", data.frame(id = 1:2),
+    contract = dr_contract(columns = c(id = "integer"))))
   next_product <- dr_product("copy", first) |> dplyr::mutate(doubled = id * 2)
   next_result <- dr_run(next_product)
   expect_equal(dplyr::collect(next_result)$doubled, c(2, 4))

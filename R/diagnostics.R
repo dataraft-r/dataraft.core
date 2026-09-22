@@ -2,6 +2,7 @@
 #' @param x A connected lake, [dr_run()] result, [dataraft.dbt::dr_dbt_build()] result or a
 #'   measurement or measurement set from [dataraft.metrics::dr_measure()], or a [dr_workflow()] result.
 #' @param asset Optional asset ID when querying a lake.
+#' @param ... Reserved for diagnostic provider options.
 #' @returns A tibble with `engine`, `id`, `status`, `success`, `release_id`,
 #'   `asset`, `outcome` and `message`. `outcome` normalizes native statuses to
 #'   `succeeded`, `blocked`, `failed` or `skipped` (unknown states are `NA`).
@@ -13,48 +14,15 @@
 #' @examples
 #' orders <- dr_product("orders", data.frame(id = 1:3))
 #' dr_status(dr_run(orders))
-dr_status <- function(x, asset = NULL) {
+dr_status <- function(x, asset = NULL, ...) {
+  x <- diagnostic_dispatch_object(x)
+  UseMethod("dr_status", x)
+}
+
+#' @export
+dr_status.default <- function(x, asset = NULL, ...) {
   if (inherits(x, "dr_workflow_result")) {
     return(x$status)
-  }
-  if (inherits(x, "dr_measurement_set") || is_measurement(x)) {
-    x <- dataraft.metrics::dr_internal_diagnostic_measurements(x)
-    return(dplyr::bind_rows(lapply(x, function(value) {
-      manifest <- attr(value, "dr_manifest")
-      tibble::tibble(
-        engine = "dataraft",
-        id = manifest$metric,
-        status = "completed",
-        outcome = "succeeded",
-        success = TRUE,
-        release_id = manifest$release_id,
-        asset = manifest$product,
-        message = paste(
-          manifest$metric,
-          "was calculated from",
-          manifest$product,
-          if (identical(manifest$input_published, FALSE)) {
-            "using its unpublished trial input."
-          } else {
-            "using its pinned published input."
-          }
-        )
-      )
-    })))
-  }
-  if (inherits(x, "dr_lake")) {
-    runs <- metadata_filter(x, "runs", asset = asset)
-    runs <- runs[order(runs$started_at, decreasing = TRUE), ]
-    return(tibble::tibble(
-      engine = rep("dataraft", nrow(runs)),
-      id = runs$run_id,
-      status = runs$status,
-      outcome = status_outcome(runs$status),
-      success = runs$status %in% c("published", "cached"),
-      release_id = runs$release_id,
-      asset = runs$asset,
-      message = runs$message
-    ))
   }
   if (inherits(x, "dr_run_result")) {
     return(tibble::tibble(
@@ -68,72 +36,9 @@ dr_status <- function(x, asset = NULL) {
       message = run_result_message(x)
     ))
   }
-  if (inherits(x, "dr_dbt_result")) {
-    nodes <- x$results
-    rows <- tibble::tibble(
-      engine = rep("dbt", nrow(nodes)),
-      id = nodes$unique_id,
-      status = nodes$status,
-      outcome = status_outcome(nodes$status),
-      success = nodes$status %in% c("success", "pass", "warn"),
-      release_id = rep(NA_character_, nrow(nodes)),
-      asset = nodes$unique_id,
-      message = rep("", nrow(nodes))
-    )
-    if (!isTRUE(x$success)) {
-      rows <- dplyr::bind_rows(
-        rows,
-        tibble::tibble(
-          engine = "dbt",
-          id = ".process",
-          status = "error",
-          outcome = "failed",
-          success = FALSE,
-          release_id = NA_character_,
-          asset = NA_character_,
-          message = "dbt execution or artifact verification failed; inspect the local result."
-        )
-      )
-    }
-    return(rows)
-  }
   abort(
     subclass = "dataraft_error_definition",
     "x must be a lake, dataraft run result, measurement set or dbt result."
-  )
-}
-
-
-#' Extension implementation helper
-#'
-#' Internal implementation interface for the DataRaft package family.
-#' @usage NULL
-#' @keywords internal
-#' @name metadata_filter
-
-metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
-  rlang::local_error_call(rlang::caller_env())
-  dataraft.lake::dr_internal_assert_lake(lake)
-  filters <- character()
-  params <- list()
-  if (!is.null(asset)) {
-    asset_id(asset)
-    filters <- c(filters, "asset = ?")
-    params <- c(params, list(asset))
-  }
-  if (!is.null(run_id)) {
-    scalar(run_id, "run_id")
-    filters <- c(filters, "run_id = ?")
-    params <- c(params, list(run_id))
-  }
-  sql <- paste("SELECT * FROM", dataraft.lake::dr_internal_meta(lake, table))
-  if (length(filters)) {
-    sql <- paste(sql, "WHERE", paste(filters, collapse = " AND "))
-  }
-  dataraft.lake::dr_internal_query(
-    lake,
-    sql,
-    if (length(params)) params else NULL
   )
 }
 
@@ -152,6 +57,7 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
 #' @param asset Asset ID. Required with `release`; otherwise selects the latest
 #'   attempt. Supply at most one of `run_id` and `asset`.
 #' @param release Exact release ID to inspect, together with `asset`.
+#' @param ... Reserved for diagnostic provider options.
 #' @returns A quality tibble. `failure_rate` is derived from available counts.
 #'   Native pointblank thresholds are recorded in the JSON `details` column.
 #' @seealso [dr_quality_report()], [dr_status()]
@@ -160,49 +66,14 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
 #' contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
 #'   c(id = "integer"), key = "id")
 #' dr_quality(dr_validate(data.frame(id = c(1L, 1L)), contract))
-dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
-  if (inherits(x, "dr_measurement_set")) {
-    return(dataraft.metrics::dr_internal_measurement_quality(x))
-  }
-  if (is.data.frame(x) && is.list(attr(x, "dr_manifest"))) {
-    return(dataraft.metrics::dr_internal_measurement_quality(list(x)))
-  }
-  if (inherits(x, "dr_lake")) {
-    if (
-      is.null(run_id) == is.null(asset) || (!is.null(release) && is.null(asset))
-    ) {
-      abort(
-        subclass = "dataraft_error_definition",
-        "Supply run_id, or asset with an optional exact release."
-      )
-    }
-    if (!is.null(release)) {
-      run_id <- dataraft.lake::dr_internal_resolve_release(
-        x,
-        asset,
-        release
-      )$run_id[[1]]
-    } else {
-      runs <- metadata_filter(x, "runs", asset = asset, run_id = run_id)
-      if (!nrow(runs)) {
-        abort(
-          subclass = "dataraft_error_definition",
-          "No matching run found.",
-          "dr_no_run"
-        )
-      }
-      runs <- runs[order(runs$started_at, runs$run_id, decreasing = TRUE), ]
-      run_id <- runs$run_id[[1]]
-      if (runs$status[[1]] == "cached") {
-        run_id <- dataraft.lake::dr_internal_resolve_release(
-          x,
-          runs$asset[[1]],
-          runs$release_id[[1]]
-        )$run_id[[1]]
-      }
-    }
-    out <- metadata_filter(x, "quality_results", run_id = run_id)
-  } else if (inherits(x, "dr_run_result")) {
+dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL, ...) {
+  x <- diagnostic_dispatch_object(x)
+  UseMethod("dr_quality", x)
+}
+
+#' @export
+dr_quality.default <- function(x, run_id = NULL, asset = NULL, release = NULL, ...) {
+  if (inherits(x, "dr_run_result")) {
     x <- run_result_evidence(x)
     if (is.null(x$quality)) {
       return(dr_quality(quality_row(
@@ -212,42 +83,6 @@ dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
       )))
     }
     out <- x$quality
-  } else if (inherits(x, "dr_dbt_result")) {
-    states <- dr_status(x)
-    out <- dplyr::bind_rows(lapply(seq_len(nrow(states)), function(i) {
-      node <- states[i, ]
-      status <- if (node$status %in% c("pass", "success")) {
-        "passed"
-      } else if (node$status == "warn") {
-        "warning"
-      } else if (node$status == "fail") {
-        "failed"
-      } else if (node$status == "skipped") {
-        "not_checked"
-      } else {
-        "error"
-      }
-      ix <- match(node$id, x$results$unique_id)
-      quality_row(
-        node$id,
-        status,
-        if (status == "warning") "warning" else "error",
-        n_failed = if (is.na(ix)) NA_real_ else x$results$failures[[ix]],
-        threshold = NA_real_,
-        engine = "dbt",
-        stage = "model",
-        message = node$message
-      )
-    }))
-    if (!nrow(out)) {
-      out <- quality_row(
-        "dbt",
-        "not_checked",
-        engine = "dbt",
-        stage = "model",
-        message = "No executed nodes."
-      )
-    }
   } else if (
     is.data.frame(x) &&
       all(c("rule", "status", "n_failed", "n_total") %in% names(x))
@@ -296,34 +131,7 @@ dr_lineage <- function(
 ) {
   direction <- match.arg(direction)
   flag(recursive, "recursive")
-  if (inherits(x, "dr_lake")) {
-    edges <- dataraft.lake::dr_registry(x, "lineage_edges")
-  } else if (inherits(x, "dr_run_result")) {
-    edges <- run_result_lineage(x)
-  } else if (inherits(x, "dr_measurement_set") || is_measurement(x)) {
-    x <- dataraft.metrics::dr_internal_diagnostic_measurements(x)
-    edges <- unique(dplyr::bind_rows(lapply(x, function(value) {
-      manifest <- attr(value, "dr_manifest")
-      tibble::tibble(
-        run_id = NA_character_,
-        from_id = manifest$product,
-        from_version = manifest$release_id,
-        to_id = manifest$metric,
-        to_version = manifest$metric_version,
-        relation = "measured_from"
-      )
-    })))
-  } else {
-    source <- dataraft.dbt::dr_dbt_lineage(x)
-    edges <- tibble::tibble(
-      run_id = rep("", nrow(source)),
-      from_id = source$from,
-      from_version = rep("", nrow(source)),
-      to_id = source$to,
-      to_version = rep("", nrow(source)),
-      relation = rep("dbt_dependency", nrow(source))
-    )
-  }
+  edges <- dr_lineage_edges(diagnostic_dispatch_object(x))
   if (is.null(asset)) {
     return(edges)
   }
@@ -352,6 +160,7 @@ status_outcome <- function(status) {
   out[
     status %in% c("completed", "published", "cached", "success", "pass", "warn")
   ] <- "succeeded"
+  out[status == "unvalidated"] <- "unvalidated"
   out[status %in% c("blocked", "fail", "missing")] <- "blocked"
   out[status %in% c("error", "failed", "runtime error")] <- "failed"
   out[status %in% c("skipped", "skip")] <- "skipped"
@@ -421,6 +230,7 @@ run_result_message <- function(x) {
   state <- switch(
     x$status,
     completed = "completed; the result is ready to collect.",
+    unvalidated = "has no declared contract; its exploratory data are available without a validation guarantee.",
     published = "was published; the saved result is ready to collect.",
     cached = "reused its published result; it is ready to collect.",
     blocked = "is blocked; no successful output is available.",
@@ -560,3 +370,54 @@ run_result_known_reason <- function(error) {
   }
   NULL
 }
+
+
+# Older serialized measurements carried only the manifest attribute.
+# Promote that documented representation before public S3 dispatch.
+diagnostic_dispatch_object <- function(x) {
+  if (is_measurement(x) && !inherits(x, "dr_measurement")) {
+    class(x) <- c("dr_measurement", class(x))
+  }
+  x
+}
+
+#' Supply dataset lineage to the common traversal
+#'
+#' Extension methods return recorded edges only. The core performs traversal
+#' and cycle protection through [dr_lineage()]. No data rows are returned.
+#' @param x A result or metadata provider.
+#' @param ... Reserved for provider options.
+#' @returns A data frame with `run_id`, `from_id`, `from_version`, `to_id`,
+#'   `to_version` and `relation` character columns.
+#' @export
+dr_lineage_edges <- function(x, ...) UseMethod("dr_lineage_edges")
+
+#' @export
+dr_lineage_edges.dr_run_result <- function(x, ...) run_result_lineage(x)
+
+#' @export
+dr_lineage_edges.default <- function(x, ...) {
+  abort(subclass = "dataraft_error_definition",
+    "This object needs a dr_lineage_edges() method.")
+}
+
+#' Read filtered registry metadata
+#'
+#' Providers validate table names and bind filters, never interpolate them.
+#' @param lake A metadata provider.
+#' @param table Registry table identifier.
+#' @param asset,run_id Optional exact filters.
+#' @param ... Reserved for provider options.
+#' @returns A data frame of matching metadata, without product rows.
+#' @export
+dr_metadata_rows <- function(lake, table, asset = NULL, run_id = NULL, ...) {
+  UseMethod("dr_metadata_rows")
+}
+
+#' @export
+dr_metadata_rows.default <- function(lake, table, asset = NULL, run_id = NULL, ...) {
+  abort(subclass = "dataraft_error_definition",
+    "This object needs a dr_metadata_rows() method.")
+}
+
+metadata_filter <- dr_metadata_rows

@@ -39,8 +39,11 @@ quality_volatile_calls <- function(check, seen = list(), depth = 0L) {
     # Inspect user-bound helper functions, but do not traverse entire namespaces.
     if (is.symbol(head) && nzchar(name) && exists(name, env, inherits = TRUE)) {
       owner <- binding_environment(name, env)
+      package_binding <- isNamespace(owner) ||
+        startsWith(environmentName(owner), "package:")
       if (bindingIsActive(name, owner) ||
-          isTRUE(rlang::env_binding_are_lazy(owner, name)[[1L]])) {
+          (!package_binding &&
+            isTRUE(rlang::env_binding_are_lazy(owner, name)[[1L]]))) {
         found <- c(found, "unresolved callback binding")
       } else {
         fn <- get(name, env, inherits = TRUE)

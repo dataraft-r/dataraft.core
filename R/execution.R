@@ -171,7 +171,7 @@ dr_publish.dr_product <- function(
     if (
       is.null(layer) &&
         !is.null(execution$layer) &&
-        !inherits(to, "dr_lake_target")
+        (!is.list(to) || is.null(to$layer))
     ) {
       layer <- execution$layer
     }
@@ -181,13 +181,7 @@ dr_publish.dr_product <- function(
     layer <- layer %||% execution$layer
   }
   if (!is.null(layer)) {
-    if (!inherits(x$target, "dr_lake_target")) {
-      abort(
-        subclass = "dataraft_error_definition",
-        "layer is available only for lake publication targets."
-      )
-    }
-    x$target$layer <- ident(layer)
+    x$target <- dr_set_target_layer(x$target, ident(layer))
   }
   dr_run(x, execution = execution, ...)
 }
@@ -262,15 +256,10 @@ collect.dr_run_result <- function(x, ...) {
     return(tibble::as_tibble(dplyr::collect(x$data, ...)))
   }
   rlang::check_dots_empty()
-  if (!is.null(x$output_lake) && DBI::dbIsValid(x$output_lake$con)) {
-    return(dataraft.lake::dr_read_release(x$output_lake, x$asset, x$release_id))
-  }
-  if (!is.null(x$output_config)) {
-    config <- x$output_config
-    config$read_only <- TRUE
-    lake <- dataraft.lake::dr_connect_lake(config)
-    on.exit(dataraft.lake::dr_close_lake(lake), add = TRUE)
-    return(dataraft.lake::dr_read_release(lake, x$asset, x$release_id))
+  reference <- x$output_config %||% x$output_lake
+  if (!is.null(reference)) {
+    return(dr_read_output(reference, x$asset, x$release_id,
+      connection = x$output_lake))
   }
   abort(
     subclass = "dataraft_error_definition",
@@ -289,8 +278,15 @@ dr_run.dr_product <- function(
   execution = NULL,
   data = NULL,
   sources = NULL,
+  write = TRUE,
   ...
 ) {
+  flag(write, "write")
+  if (!write) {
+    object <- apply_execution_defaults(pipeline, product_execution(pipeline, execution))
+    return(dr_trial(object, data = data, sources = sources,
+      stop_on_failure = stop_on_failure))
+  }
   object <- replace_execution_sources(pipeline, data, sources)
   execution <- if (is.null(.context)) {
     product_execution(object, execution)
@@ -405,7 +401,9 @@ dr_run.dr_product <- function(
     )
   }
   if (
-    stop_on_failure && !result$status %in% c("completed", "published", "cached")
+    stop_on_failure &&
+      !(identical(result$status, "unvalidated") && is.null(object$target)) &&
+      !result$status %in% c("completed", "published", "cached")
   ) {
     abort(
       subclass = failure_subclass(result),
@@ -656,7 +654,7 @@ new_product_context <- function(evidence = NULL) {
 
 result_data <- function(result) {
   rlang::local_error_call(rlang::caller_env())
-  if (!result$status %in% c("completed", "published", "cached")) {
+  if (!result$status %in% c("completed", "published", "cached", "unvalidated")) {
     abort(
       subclass = "dataraft_error_definition",
       "An upstream product did not complete successfully.",
@@ -722,7 +720,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
       } else {
         archive <- NULL
         if (!is.null(lake) && inherits(source, "dr_source")) {
-          landed <- dataraft.lake::dr_internal_land_source(lake, source)
+          landed <- dr_land_source(lake, source)
           archive <- list(
             source = source$id,
             source_version = source$version,
@@ -760,14 +758,8 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
             received_at = landed$received_at
           )
         } else {
-          data <- if (identical(class(source), "dr_release_source")) {
-            dataraft.lake::dr_internal_read_release_source(
-              source,
-              lake %||% context$read_lake
-            )
-          } else {
-            dr_read_source(source)
-          }
+          data <- dr_read_input(source,
+            context = lake %||% context$read_lake)
         }
         context$sources[[length(context$sources) + 1L]] <-
           list(source = source, lake = lake, data = data, archive = archive)

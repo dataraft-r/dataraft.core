@@ -54,7 +54,7 @@ test_that("definition, inspection and validation never call user functions", {
     "defined"
   )
   expect_equal(calls, 0)
-  expect_equal(dr_run(product)$status, "completed")
+  expect_equal(dr_run(product)$status, "unvalidated")
   expect_equal(calls, 2)
   expect_snapshot({
     print(product)
@@ -150,6 +150,7 @@ test_that("catalog delivery gets metadata without data rows or connections", {
       id = 1:2,
       secret_value = c("private-a", "private-b")
     )) |>
+    dr_add_contract(dr_contract(columns = c(id = "integer", secret_value = "character"))) |>
     dr_add_catalog(function(metadata) received <<- metadata)
   result <- dr_run(product)
   expect_equal(received$rows, 2L)
@@ -183,7 +184,7 @@ test_that("execution warnings remain inspectable without entering metadata text"
     conditionMessage(result$warning_conditions[[1]]),
     "private source detail"
   )
-  expect_equal(result$status, "completed")
+  expect_equal(result$status, "unvalidated")
   expect_equal(
     grepl(
       "private source detail",

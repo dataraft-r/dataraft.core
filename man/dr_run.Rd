@@ -28,6 +28,9 @@ the same execution. Without a target, the result retains its checked table;
 }
 \details{
 Product execution options passed through \code{...} include:
+\code{write = FALSE} runs the same recursive read-only execution as
+\code{dr_trial()}, disabling targets, catalogs and durable evidence.
+Source and transform callbacks can still have their own side effects.
 \itemize{
 \item \code{data}: a new delivery replacing the sole primary input while retaining
 its name, transformations and checks. If the primary input is a product,
@@ -45,7 +48,9 @@ layer defaults apply only to the root product. Untargeted dependencies stay
 in memory, and existing dependency targets are preserved. Stored defaults
 on nested products are not activated during dependency execution.
 \item \code{stop_on_failure}: defaults to \code{TRUE}. Set \code{FALSE} to receive failed or
-blocked run results for programmatic inspection.
+blocked run results for programmatic inspection. A product without a target
+can return collectable \code{unvalidated} data without throwing. An unvalidated
+product with a target never writes and raises an error by default.
 \item \code{evidence}: an optional directory for durable run records. Defaults to
 \code{getOption("dataraft.evidence")}; no evidence directory is required.
 \item \code{cache}: lake targets default to \code{FALSE}. \code{TRUE} reuses a matching current

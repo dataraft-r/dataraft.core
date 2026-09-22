@@ -1,6 +1,6 @@
 test_that("inferred schemas are explicitly unvalidated and remain inspectable", {
   product <- dr_product("observed", data.frame(amount = c(1, NA_real_)))
-  result <- dr_trial(product)
+  result <- dr_run(product)
   expect_identical(result$status, "unvalidated")
   expect_identical(dr_collect(result)$amount, c(1, NA_real_))
   checks <- dr_quality_report(result)
@@ -93,4 +93,19 @@ test_that("unvalidated products never invoke a configured writer", {
   result <- dr_run(product, stop_on_failure = FALSE)
   expect_identical(result$status, "unvalidated")
   expect_identical(calls, 0L)
+})
+
+
+test_that("deterministic package helpers are accepted without forcing user promises", {
+  rule <- dr_quality_rule("bounded", ~ dplyr::between(x, 0, 2))
+  expect_identical(dr_run_quality(rule, data.frame(x = 1))$status, "passed")
+  helper <- dplyr::between
+  rule <- dr_quality_rule("alias", ~ helper(x, 0, 2))
+  expect_identical(dr_run_quality(rule, data.frame(x = 1))$status, "passed")
+  called <- FALSE
+  delayedAssign("unresolved", { called <- TRUE; function(x) TRUE })
+  rule <- dr_quality_rule("promise", ~ unresolved(x))
+  expect_error(dr_run_quality(rule, data.frame(x = 1)),
+    class = "dataraft_error_quality_volatile")
+  expect_false(called)
 })

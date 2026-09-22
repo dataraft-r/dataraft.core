@@ -26,7 +26,10 @@ dr_pointblank_checks(
   build,
   severity = c("error", "warning"),
   max_failure = 0,
-  policy = c("rule", "agent")
+  policy = c("rule", "agent"),
+  action = NULL,
+  threshold = NULL,
+  volatile = FALSE
 )
 }
 \arguments{
@@ -44,11 +47,11 @@ for their own collection.}
 \item{severity}{Compatibility argument: \code{"error"} corresponds to
 \code{action = "block"}, \code{"warning"} to \code{action = "warn"}. Prefer \code{action}
 for new \code{dr_quality_rule()} definitions. Supplying both is an error.
-\code{dr_pointblank_checks()} continues to use \code{severity}.}
+}
 
 \item{max_failure}{Compatibility argument for \code{threshold}. Prefer \code{threshold}
 for new \code{dr_quality_rule()} definitions. Supplying both is an error.
-\code{dr_pointblank_checks()} continues to use \code{max_failure}.}
+}
 
 \item{description}{Rule description.}
 

@@ -180,7 +180,7 @@ normalize_result_source <- function(result) {
     nzchar(result$release_id)
   destination <- result$output_config %||% result$output_lake
   if (pinned && !is.null(destination)) {
-    source <- dataraft.lake::dr_source_release(
+    source <- dr_output_source(
       destination,
       result$asset,
       result$release_id

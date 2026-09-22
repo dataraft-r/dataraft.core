@@ -142,7 +142,7 @@ normalize_source <- function(source, id, name, reader = NULL) {
       is.null(reader) &&
         tolower(tools::file_ext(source)) %in% c("parquet", "pq")
     ) {
-      source <- dataraft.adapters::dr_source_parquet(source)
+      source <- dr_as_source(source)
     } else {
       source <- dr_source_file(
         paste0(
@@ -690,7 +690,7 @@ print.dr_product <- function(x, ...) {
   cat("Quality:", length(x$quality) + length(x$contract$rules), "rules\n")
   target <- product_display_target(x)
   target_label <- dr_inspect(target)$type
-  if (inherits(target, "dr_lake_target")) {
+  if (is.list(target) && !is.null(target$layer)) {
     target_label <- paste0(target_label, " (", target$layer, ")")
   }
   cat("Target: ", target_label, "\n", sep = "")
@@ -717,11 +717,11 @@ product_display_target <- function(x) {
   execution <- attr(x, "dr_execution_config", exact = TRUE)
   target <- x$target %||% execution$to
   if (
-    inherits(target, "dr_lake_target") &&
+    component_method("dr_set_target_layer", target) &&
       !is.null(execution$layer) &&
       (is.null(x$target) || is.null(target$layer))
   ) {
-    target$layer <- execution$layer
+    target <- dr_set_target_layer(target, execution$layer)
   }
   target
 }

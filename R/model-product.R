@@ -88,12 +88,11 @@ dr_validate.dr_model_product <- function(data, contract = NULL, ...) {
   invisible(lapply(data$sources, dr_validate))
   if (!is.null(data$target)) {
     if (
-      !inherits(data$target, "dr_lake_target") ||
-        length(data$target$partition_by)
+      !component_method("dr_publish_model_result", data$target)
     ) {
       abort(
         subclass = "dataraft_error_definition",
-        "Model products publish complete snapshots to a lake target."
+        "Model targets need a dr_publish_model_result() method."
       )
     }
     dr_check_component(data$target)
@@ -138,8 +137,15 @@ dr_run.dr_model_product <- function(
   data = NULL,
   sources = NULL,
   previous = NULL,
+  write = TRUE,
   ...
 ) {
+  flag(write, "write")
+  if (!write) {
+    object <- apply_execution_defaults(pipeline, product_execution(pipeline, execution))
+    return(dr_trial(object, data = data, sources = sources,
+      stop_on_failure = stop_on_failure))
+  }
   rlang::check_dots_empty()
   flag(stop_on_failure, "stop_on_failure")
   if (!is.null(data)) {
@@ -205,7 +211,7 @@ dr_run.dr_model_product <- function(
   }
   if (result$status == "completed" && !is.null(x$target)) {
     result <- tryCatch(
-      dataraft.lake::dr_internal_publish_model_result(x, result, previous),
+      dr_publish_model_result(x$target, x, result, previous),
       error = function(e) {
         result$status <- "error"
         result$error <- e
@@ -258,9 +264,9 @@ collect.dr_model_result <- function(x, ...) {
   if (!is.null(x$data)) {
     return(x$data)
   }
-  dataraft.lake::dr_internal_with_model_lake(x, function(lake) {
-    dataraft.lake::dr_internal_read_model_release(lake, x$asset, x$release_id)
-  })
+  dr_read_output(x$output_config %||% x$output_lake, x$asset,
+    x$release_id, connection = x$output_lake)
+
 }
 
 

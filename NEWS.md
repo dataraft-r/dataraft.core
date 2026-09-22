@@ -29,3 +29,11 @@
 * Quality rules reject recognizable random and time-dependent calls unless
   `volatile = TRUE` is declared. Volatile checks are diagnostic only and cannot
   authorize publication or approval. Arbitrary callback purity is not guaranteed.
+
+* Diagnostic providers now implement public S3 methods; status, quality and lineage no longer require reverse calls from core into extension packages.
+* `dr_run(write = FALSE)` shares the recursive no-write path with `dr_trial()`;
+  existing `dr_trial()` calls remain supported.
+* `dr_contract_policy()` and `dr_contract_meta()` provide pipeable declaration
+  builders, retaining constructor validation and avoiding duplicate constraints.
+* `dr_pointblank_checks()` accepts `action` and `threshold`, matching native rules.
+  Legacy arguments remain supported but cannot be supplied together with aliases.

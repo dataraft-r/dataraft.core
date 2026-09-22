@@ -39,7 +39,15 @@ dr_replace_sources <- function(x, ...) {
 
 
 replace_sources_list <- function(x, replacements) {
-  rlang::local_error_call(rlang::caller_env())
+  dr_replace_source_bindings(x, replacements)
+}
+
+#' Replace named source bindings through an extension
+#' @param x A product or backend-specific definition.
+#' @param replacements Uniquely named list of new source bindings.
+#' @returns An updated definition, without executing it.
+#' @export
+dr_replace_source_bindings <- function(x, replacements) {
   nms <- names(replacements)
   if (
     !length(replacements) ||
@@ -53,9 +61,13 @@ replace_sources_list <- function(x, replacements) {
       "Supply uniquely named, non-empty replacement sources."
     )
   }
-  if (inherits(x, "dr_dbt_project")) {
-    return(replace_dbt_sources(x, replacements))
-  }
+  UseMethod("dr_replace_source_bindings")
+}
+
+#' @export
+dr_replace_source_bindings.default <- function(x, replacements) {
+  rlang::local_error_call(rlang::caller_env())
+  nms <- names(replacements)
   if (!inherits(x, "dr_product")) {
     abort(
       subclass = "dataraft_error_source",
@@ -317,72 +329,4 @@ replacement_graph <- function(x) {
   }
   visit(x)
   definitions
-}
-
-
-replace_dbt_sources <- function(x, replacements) {
-  rlang::local_error_call(rlang::caller_env())
-  if (is.null(x$lake)) {
-    abort(
-      subclass = "dataraft_error_source",
-      "Source replacement requires a managed dbt project with lake configuration."
-    )
-  }
-  slots <- list()
-  for (group in names(x$source_groups)) {
-    for (alias in names(x$source_groups[[group]])) {
-      slots[[length(slots) + 1L]] <- c(group = group, alias = alias)
-    }
-  }
-  selected <- integer()
-  for (name in names(replacements)) {
-    matches <- which(vapply(
-      slots,
-      function(slot) {
-        name == slot[["alias"]] ||
-          name == paste(slot[["group"]], slot[["alias"]], sep = ".")
-      },
-      logical(1)
-    ))
-    if (!length(matches)) {
-      abort(
-        subclass = "dataraft_error_source",
-        paste0(
-          "Unknown dbt source binding: ",
-          name,
-          ". Available names: ",
-          paste(
-            vapply(
-              slots,
-              function(slot) paste(slot, collapse = "."),
-              character(1)
-            ),
-            collapse = ", "
-          ),
-          "."
-        )
-      )
-    }
-    if (length(matches) != 1L) {
-      abort(
-        subclass = "dataraft_error_source",
-        paste("Ambiguous dbt source binding; use group.table:", name)
-      )
-    }
-    if (matches %in% selected) {
-      abort(
-        subclass = "dataraft_error_source",
-        "Two replacements select the same dbt source binding."
-      )
-    }
-    selected <- c(selected, matches)
-    slot <- slots[[matches]]
-    refs <- dataraft.dbt::dr_internal_dbt_source_references(stats::setNames(
-      list(replacements[[name]]),
-      slot[["alias"]]
-    ))
-    dataraft.dbt::dr_internal_dbt_source_catalog(refs, x$lake)
-    x$source_groups[[slot[["group"]]]][[slot[["alias"]]]] <- refs[[1L]]
-  }
-  x
 }

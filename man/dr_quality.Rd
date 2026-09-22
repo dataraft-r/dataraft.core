@@ -4,9 +4,10 @@
 \alias{dr_quality}
 \title{Retrieve quality evidence for a run or release}
 \usage{
-dr_quality(x, run_id = NULL, asset = NULL, release = NULL)
+dr_quality(x, run_id = NULL, asset = NULL, release = NULL, ...)
 }
 \arguments{
+\item{...}{Reserved for diagnostic provider options.}
 \item{x}{A lake, run result, measurement, measurement set, dbt result or
 quality tibble.
 Measurement sets resolve their exact input releases using retained

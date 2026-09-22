@@ -150,36 +150,13 @@ dr_model <- function(
   releases = NULL,
   check = TRUE
 ) {
-  need("dm")
-  need("dataraft.lake", "Models built from published lake releases")
-  if (is.null(names(tables)) || anyDuplicated(names(tables))) {
-    abort(
-      subclass = "dataraft_error_definition",
-      "tables must be named uniquely."
-    )
-  }
-  if (!is.null(releases) && !setequal(names(releases), names(tables))) {
-    abort(
-      subclass = "dataraft_error_definition",
-      "Pin all model table releases."
-    )
-  }
-  refs <- lapply(names(tables), function(n) {
-    dataraft.lake::dr_internal_resolve_release(
-      lake,
-      tables[[n]],
-      if (is.null(releases)) NULL else releases[[n]]
-    )
-  })
-  names(refs) <- names(tables)
-  model <- dm::dm(
-    !!!lapply(refs, function(r) {
-      dataraft.lake::dr_tbl(lake, r$asset[[1]], r$release_id[[1]])
-    })
-  )
-  model <- dm_keys(model, primary_keys, foreign_keys, check)
-  attr(model, "dr_releases") <- lapply(refs, function(r) r$release_id[[1]])
-  model
+  UseMethod("dr_model")
+}
+
+#' @export
+dr_model.default <- function(lake, tables, primary_keys = list(),
+  foreign_keys = list(), releases = NULL, check = TRUE) {
+  abort(subclass = "dataraft_error_definition", "This provider needs a dr_model() method.")
 }
 
 

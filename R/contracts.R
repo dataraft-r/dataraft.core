@@ -245,10 +245,8 @@ dr_contract <- function(
 #' @param severity Compatibility argument: `"error"` corresponds to
 #'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
 #'   for new `dr_quality_rule()` definitions. Supplying both is an error.
-#'   `dr_pointblank_checks()` continues to use `severity`.
 #' @param max_failure Compatibility argument for `threshold`. Prefer `threshold`
 #'   for new `dr_quality_rule()` definitions. Supplying both is an error.
-#'   `dr_pointblank_checks()` continues to use `max_failure`.
 #' @param description Rule description.
 #' @param engine Formula evaluation engine: `"native"` (default) or optional
 #'   `"pointblank"`. Both require logical row predicates and count missing
@@ -397,9 +395,20 @@ dr_pointblank_checks <- function(
   build,
   severity = c("error", "warning"),
   max_failure = 0,
-  policy = c("rule", "agent")
+  policy = c("rule", "agent"),
+  action = NULL,
+  threshold = NULL,
+  volatile = FALSE
 ) {
-  rule <- dr_quality_rule(name, build, severity, max_failure)
+  if (!is.null(action) && !missing(severity)) abort("Use action or severity, not both.")
+  if (!is.null(threshold) && !missing(max_failure)) abort("Use threshold or max_failure, not both.")
+  if (!is.null(action)) {
+    action <- match.arg(action, c("block", "warn"))
+    severity <- if (action == "warn") "warning" else "error"
+  }
+  if (!is.null(threshold)) max_failure <- threshold
+  rule <- dr_quality_rule(name, build, severity, max_failure, volatile = volatile)
+  rule$action <- action
   rule$engine <- "pointblank"
   rule$engine_explicit <- TRUE
   policy <- match.arg(policy)

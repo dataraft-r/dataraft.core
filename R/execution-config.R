@@ -42,12 +42,8 @@ dr_execution_config <- function(
   }
   if (!is.null(to)) {
     to <- normalize_target(to)
-    if (!is.null(layer) && !inherits(to, "dr_lake_target")) {
-      abort(
-        subclass = "dataraft_error_definition",
-        "An execution layer requires a lake target."
-      )
-    }
+    if (!is.null(layer)) to <- dr_set_target_layer(to, layer)
+
     if (
       !component_method("dr_write_target", to) &&
         !component_method("dr_execute_target", to)
@@ -147,17 +143,13 @@ apply_execution_defaults <- function(product, execution) {
     }
     if (!length(stack) && is.null(x$target) && !is.null(execution$to)) {
       x$target <- execution$to
-      if (!is.null(execution$layer)) x$target$layer <- execution$layer
+      if (!is.null(execution$layer)) {
+        x$target <- dr_set_target_layer(x$target, execution$layer)
+      }
     } else if (
       !length(stack) && is.null(x$target$layer) && !is.null(execution$layer)
     ) {
-      if (!inherits(x$target, "dr_lake_target")) {
-        abort(
-          subclass = "dataraft_error_definition",
-          "An execution layer requires a lake target on the root product."
-        )
-      }
-      x$target$layer <- execution$layer
+      x$target <- dr_set_target_layer(x$target, execution$layer)
     }
     sources <- lapply(product_sources(x), function(source) {
       if (inherits(source, "dr_product")) {

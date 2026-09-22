@@ -67,7 +67,9 @@ test_that("failed gates and trials never invoke the configured writer", {
     }
   )
   flow <- dr_workflow() |>
-    dr_add_product(dr_product("orders") |> dr_add_quality(~ amount > 0)) |>
+    dr_add_product(dr_product("orders",
+      contract = dr_contract(columns = c(amount = "numeric"))) |>
+      dr_add_quality(~ amount > 0)) |>
     dr_add_recipe(dr_recipe() |> dr_step_mutate(amount = amount * 2)) |>
     dr_set_target(structure(list(), class = "workflow_test_target"))
   good <- data.frame(amount = 10)
@@ -114,7 +116,7 @@ test_that("workflow execution defaults and explicit rule engines remain separate
     )
   expect_equal(
     dr_trial(flow, data = data.frame(amount = 10))$status,
-    "completed"
+    "unvalidated"
   )
 })
 
@@ -206,13 +208,19 @@ test_that("nested modular workflows share dependencies and trials disable their 
   expect_equal(dr_collect(result)$amount.x, c(20, 40))
   expect_identical(reads, 1L)
   expect_identical(writes, 0L)
+  via_run <- dr_run(downstream, write = FALSE)
+  expect_equal(dr_collect(via_run), dr_collect(result))
+  expect_identical(reads, 2L)
+  expect_identical(writes, 0L)
 })
 
 test_that("lake workflow publications retain checked immutable releases", {
   skip_if_not_installed("duckdb")
   destination <- withr::local_tempdir()
   flow <- dr_workflow() |>
-    dr_add_product(dr_product("orders") |> dr_add_quality(~ amount >= 0)) |>
+    dr_add_product(dr_product("orders",
+      contract = dr_contract(columns = c(amount = "numeric"))) |>
+      dr_add_quality(~ amount >= 0)) |>
     dr_add_recipe(dr_recipe() |> dr_step_mutate(amount = amount * 2))
   first <- dr_publish(flow, to = destination, data = data.frame(amount = 10))
   second <- dr_publish(flow, to = destination, data = data.frame(amount = 20))

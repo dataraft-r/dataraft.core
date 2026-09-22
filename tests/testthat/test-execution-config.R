@@ -22,6 +22,7 @@ test_that("formula engines propagate through contracts and lookup dependencies",
     "customers",
     data.frame(id = 1:2, region = c("a", "b"))
   ) |>
+    dr_add_contract(dr_contract(columns = c(id = "integer", region = "character"))) |>
     dr_add_quality(~ id > 0, name = "customer_positive")
   definition <- dr_product("orders", data.frame(id = 1:2)) |>
     dr_add_contract(dr_contract(

@@ -98,22 +98,8 @@ dr_quality_rows <- function(x, rule = NULL, contract = NULL, limit = 100) {
     }
     contract <- diagnostic$contract
     if (!is.null(diagnostic$config)) {
-      lake <- diagnostic$lake
-      if (!inherits(lake, "dr_lake") || !DBI::dbIsValid(lake$con)) {
-        lake <- dataraft.lake::dr_connect_lake(
-          diagnostic$config,
-          read_only = TRUE
-        )
-        on.exit(dataraft.lake::dr_close_lake(lake), add = TRUE)
-      }
-      x <- dplyr::tbl(
-        lake$con,
-        DBI::Id(
-          catalog = "lake",
-          schema = diagnostic$schema,
-          table = diagnostic$table
-        )
-      )
+      return(dr_read_diagnostic_rows(diagnostic$config, diagnostic,
+        rule = rule, limit = limit))
     } else {
       x <- diagnostic$data
     }

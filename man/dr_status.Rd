@@ -4,9 +4,10 @@
 \alias{dr_status}
 \title{Inspect execution status across R and dbt workflows}
 \usage{
-dr_status(x, asset = NULL)
+dr_status(x, asset = NULL, ...)
 }
 \arguments{
+\item{...}{Reserved for diagnostic provider options.}
 \item{x}{A connected lake, \code{\link[=dr_run]{dr_run()}} result, \code{\link[dataraft.dbt:dr_dbt_build]{dataraft.dbt::dr_dbt_build()}} result or a
 measurement or measurement set from \code{\link[dataraft.metrics:dr_measure]{dataraft.metrics::dr_measure()}}, or a \code{\link[=dr_workflow]{dr_workflow()}} result.}
 

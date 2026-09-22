@@ -64,10 +64,9 @@ quality_formula_units <- function(data, predicate) {
 #' @export
 dr_run_quality.dr_rule <- function(rule, data, ...) {
   assert_quality_volatility(rule)
-  if (identical(rule$action, "quarantine")) {
-    rule$severity <- "error"
-    rule$max_failure <- 0
-  }
+  quarantine <- identical(rule$action, "quarantine")
+  severity <- if (quarantine) "error" else rule$severity
+  threshold <- if (quarantine) 0 else rule$max_failure
   if (identical(rule$engine, "pointblank")) {
     return(volatile_quality_evidence(pointblank_results(rule, data, ...), rule))
   }
@@ -111,8 +110,8 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
       rule$name,
       value$n_failed,
       value$n_total,
-      rule$severity,
-      rule$max_failure
+      severity,
+      threshold
     )
   } else {
     abort(

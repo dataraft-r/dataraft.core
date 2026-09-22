@@ -40,6 +40,7 @@ test_that("external packages can substitute every component without changing the
   example_workflow <- function(source, transform, target = NULL) {
     dr_product("orders") |>
       dr_add_source(source) |>
+      dr_add_contract(dr_contract(columns = c(amount = "numeric"))) |>
       dr_add_transform(transform) |>
       dr_add_quality(~ amount > 0) |>
       dr_set_target(target)

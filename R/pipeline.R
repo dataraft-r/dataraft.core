@@ -28,6 +28,9 @@ run_result <- function(run, status, release = NA_character_, quality = NULL) {
 #' [dr_collect()] materializes lazy output when it is needed.
 #'
 #' Product execution options passed through `...` include:
+#' * `write`: defaults to `TRUE`. Set `FALSE` for the same recursive read-only
+#'   execution as [dr_trial()], disabling targets, catalogs and durable evidence.
+#'   User source and transform callbacks can still perform their own side effects.
 #' * `data`: a new delivery replacing the sole primary input while retaining
 #'   its name, transformations and checks. If the primary input is a product,
 #'   its single-primary-input chain is followed to the ordinary delivery,
@@ -44,7 +47,9 @@ run_result <- function(run, status, release = NA_character_, quality = NULL) {
 #'   in memory, and existing dependency targets are preserved. Stored defaults
 #'   on nested products are not activated during dependency execution.
 #' * `stop_on_failure`: defaults to `TRUE`. Set `FALSE` to receive failed or
-#'   blocked run results for programmatic inspection.
+#'   blocked run results for programmatic inspection. A product without a target
+#'   can return collectable `unvalidated` data without throwing. An unvalidated
+#'   product with a target never writes and raises an error by default.
 #' * `evidence`: an optional directory for durable run records. Defaults to
 #'   `getOption("dataraft.evidence")`; no evidence directory is required.
 #' * `cache`: lake targets default to `FALSE`. `TRUE` reuses a matching current
