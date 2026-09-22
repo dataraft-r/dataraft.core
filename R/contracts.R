@@ -240,9 +240,11 @@ dr_contract <- function(
 #' @param dimension Optional ODCS quality dimension.
 #' @param severity Compatibility argument: `"error"` corresponds to
 #'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
-#'   for new rules. Supplying both arguments is an error.
+#'   for new `dr_quality_rule()` definitions. Supplying both is an error.
+#'   `dr_pointblank_checks()` continues to use `severity`.
 #' @param max_failure Compatibility argument for `threshold`. Prefer `threshold`
-#'   for new rules. Supplying both arguments is an error.
+#'   for new `dr_quality_rule()` definitions. Supplying both is an error.
+#'   `dr_pointblank_checks()` continues to use `max_failure`.
 #' @param description Rule description.
 #' @param engine Formula evaluation engine: `"native"` (default) or optional
 #'   `"pointblank"`. Both require logical row predicates and count missing
@@ -250,7 +252,7 @@ dr_contract <- function(
 #'   normalized predicate, retaining its reports and check evidence. Ordinary
 #'   functions use the native engine; use [dr_pointblank_checks()] for custom agents.
 #' @param build Function creating a pointblank agent from a lazy table.
-#' @param policy `"rule"` preserves the explicit `action` / `threshold`
+#' @param policy `"rule"` preserves the explicit `severity` / `max_failure`
 #'   gate. `"agent"` uses pointblank's per-step action levels: warnings permit
 #'   publication, stop/error and critical states block. Native pointblank
 #'   threshold rounding applies. An unconfigured, inactive or errored agent

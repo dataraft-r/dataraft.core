@@ -42,10 +42,12 @@ for their own collection.}
 
 \item{severity}{Compatibility argument: \code{"error"} corresponds to
 \code{action = "block"}, \code{"warning"} to \code{action = "warn"}. Prefer \code{action}
-for new rules. Supplying both arguments is an error.}
+for new \code{dr_quality_rule()} definitions. Supplying both is an error.
+\code{dr_pointblank_checks()} continues to use \code{severity}.}
 
 \item{max_failure}{Compatibility argument for \code{threshold}. Prefer \code{threshold}
-for new rules. Supplying both arguments is an error.}
+for new \code{dr_quality_rule()} definitions. Supplying both is an error.
+\code{dr_pointblank_checks()} continues to use \code{max_failure}.}
 
 \item{description}{Rule description.}
 
@@ -69,7 +71,7 @@ quarantine, every rejected row is removed regardless of threshold.}
 
 \item{build}{Function creating a pointblank agent from a lazy table.}
 
-\item{policy}{\code{"rule"} preserves the explicit \code{action} / \code{threshold}
+\item{policy}{\code{"rule"} preserves the explicit \code{severity} / \code{max_failure}
 gate. \code{"agent"} uses pointblank's per-step action levels: warnings permit
 publication, stop/error and critical states block. Native pointblank
 threshold rounding applies. An unconfigured, inactive or errored agent
