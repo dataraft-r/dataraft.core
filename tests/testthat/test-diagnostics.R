@@ -26,6 +26,7 @@ test_that("quality accessors distinguish latest failure, pinned release and cach
 
 test_that("process errors stay visible beside successful dbt nodes", {
   skip_if_not_installed("dataraft.dbt")
+  loadNamespace("dataraft.dbt")
   parsed <- dataraft.dbt:::dbt_read_artifacts(system.file(
     "extdata",
     "dbt-artifacts",

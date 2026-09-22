@@ -56,7 +56,7 @@ test_that("shared dependencies execute once and invalid graphs fail before IO", 
   expect_equal(calls, 1L)
 })
 
-test_that("sources are acquired once and lazy DBI results stay lazy", {
+test_that("sources are acquired once and lazy DBI results become stable snapshots", {
   skip_if_not_installed("dataraft.adapters")
   skip_if_not_installed("duckdb")
   con <- DBI::dbConnect(duckdb::duckdb())
@@ -73,7 +73,7 @@ test_that("sources are acquired once and lazy DBI results stay lazy", {
     dr_add_transform(transform) |>
     dr_add_quality(~ amount > 0)
   result <- dr_run(lazy)
-  expect_s3_class(result$data, "tbl_sql")
+  expect_s3_class(result$data, "tbl_df")
   expect_identical(dr_inspect(result$data)$columns, c("id", "amount"))
   expect_equal(dr_collect(result)$id, 2:3)
   expect_equal(calls, 1L)

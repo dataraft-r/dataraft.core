@@ -1,4 +1,4 @@
-test_that("recipes preserve lazy SQL until collect", {
+test_that("recipes execute deferred SQL once and retain the checked snapshot", {
   skip_if_not_installed("dataraft.adapters")
   skip_if_not_installed("RSQLite")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
@@ -13,7 +13,8 @@ test_that("recipes preserve lazy SQL until collect", {
         dr_step_mutate(amount = amount * 2)
     )
   result <- dr_trial(flow)
-  expect_s3_class(result$data, "tbl_sql")
+  expect_s3_class(result$data, "tbl_df")
+  DBI::dbExecute(con, "UPDATE orders SET amount = -1")
   expect_equal(dr_collect(result)$amount, c(4, 6))
   expect_identical(DBI::dbIsValid(con), TRUE)
 })

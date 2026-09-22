@@ -154,7 +154,7 @@ test_that("auxiliary products do not turn the primary dplyr input into a list", 
   )
 })
 
-test_that("dplyr operations work on caller-owned lazy tables", {
+test_that("deferred database operations produce a stable in-memory run snapshot", {
   skip_if_not_installed("dataraft.adapters")
   skip_if_not_installed("RSQLite")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
@@ -168,7 +168,9 @@ test_that("dplyr operations work on caller-owned lazy tables", {
       dplyr::summarise(total = sum(amount, na.rm = TRUE), .groups = "drop")
   }
   lazy <- dr_run(make(dr_source_database(con, "orders")))
-  expect_s3_class(lazy$data, "tbl_sql")
+  expect_s3_class(lazy$data, "tbl_df")
+  DBI::dbExecute(con, "UPDATE orders SET amount = -1")
+  expect_equal(dr_collect(lazy)$total, c(20, 30))
   expect_equal(dr_collect(lazy), dr_collect(dr_run(make(data))))
   expect_true(DBI::dbIsValid(con))
 })
@@ -185,14 +187,17 @@ test_that("file transformations and accepted lake sources retain exact releases"
   )
   lake <- dr_open_lake(file.path(root, "lake"))
   withr::defer(dr_close_lake(lake))
-  definition <- dr_product("orders", path) |> dplyr::mutate(amount = amount * 2)
+  definition <- dr_product("orders", path,
+    contract = c(id = "integer", amount = "numeric")) |>
+    dplyr::mutate(amount = amount * 2)
   first <- dr_publish(definition, to = lake, layer = "validated")
   expect_equal(dr_collect(first)$amount, c(20, 40))
   expect_equal(
     dplyr::collect(dplyr::tbl(lake, "orders", first$release_id))$amount,
     c(20, 40)
   )
-  pinned <- dr_product("copy", first)
+  pinned <- dr_product("copy", first,
+    contract = c(id = "integer", amount = "numeric"))
   utils::write.csv(
     data.frame(id = 1:2, amount = c(30, 40)),
     path,
@@ -220,6 +225,7 @@ test_that("lookup contents participate in lake cache identity without changing d
       code_version = "v1"
     ) |>
       dr_add_lookup(reference, by = "id") |>
+      dr_add_contract(c(id = "integer", amount = "numeric")) |>
       dr_set_target(lake)
   }
   first <- dr_run(make(data.frame(id = 1L, amount = 10)), cache = TRUE)

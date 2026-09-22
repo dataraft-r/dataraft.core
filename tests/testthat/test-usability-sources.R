@@ -107,11 +107,13 @@ test_that("stored destinations apply only to a root and can be overridden", {
   child <- dr_product(
     "orders",
     data.frame(amount = 10),
+    contract = c(amount = "numeric"),
     execution = dr_execution_config(to = child_path)
   )
   parent <- dr_product(
     "summary",
     child,
+    contract = c(amount = "numeric"),
     execution = dr_execution_config(to = parent_path)
   )
   first <- dr_publish(parent)
@@ -135,6 +137,7 @@ test_that("ingestion uses a stored connection-free destination", {
   orders <- dr_product(
     "orders",
     data.frame(amount = 10),
+    contract = c(amount = "numeric"),
     execution = dr_execution_config(to = root)
   )
   accepted <- dr_ingest(orders)
@@ -173,6 +176,7 @@ test_that("targets embeds resolved defaults without activating child destination
   configured <- dr_product(
     "summary",
     child,
+    contract = c(amount = "numeric"),
     execution = dr_execution_config(to = path)
   )
   changed_command <- dr_as_targets(configured)[[2L]]$command$expr[[1L]]

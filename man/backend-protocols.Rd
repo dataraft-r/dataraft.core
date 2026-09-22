@@ -36,4 +36,4 @@ dr_set_target_layer(x, layer, ...) UseMethod("dr_set_target_layer")
 \item{...}{Adapter-specific options.}
 }
 \value{Adapter-specific values described by each operation.}
-\description{Storage adapters implement these public S3 protocols. Unsupported operations fail explicitly. Source and target coercion perform no I/O. Output readers use exact release IDs. Diagnostic readers collect bounded rows before closing owned connections. Write sessions coordinate with maintenance until their explicit scope exits.}
+\description{Storage adapters implement these public S3 protocols. Unsupported operations fail explicitly. Source and target coercion perform no I/O. Output readers use exact release IDs. Diagnostic readers collect bounded rows before closing owned connections. Write sessions coordinate with maintenance until their explicit scope exits. Load the provider package before using shorthand paths or serialized provider objects. Core does not discover sibling packages by name; the metapackage loads its providers, and provider constructors load their namespaces.}

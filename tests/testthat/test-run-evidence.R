@@ -3,6 +3,7 @@ test_that("run evidence is durable and excludes rows and executable definitions"
   secret <- "fixture-secret-never-persist"
   result <- dr_product("orders") |>
     dr_add_source(data.frame(id = 1:2, private = secret)) |>
+    dr_add_contract(c(id = "integer", private = "character")) |>
     dr_add_transform(function(data) data) |>
     dr_run(evidence = path)
   saved <- dr_read_run(path, result$run_id)
@@ -49,6 +50,7 @@ test_that("outbox retries fresh matching destinations and never resends success"
   expect_warning(
     result <- dr_product("orders") |>
       dr_add_source(data.frame(id = 1L)) |>
+      dr_add_contract(c(id = "integer")) |>
       dr_add_catalog(callback, name = "business") |>
       dr_run(evidence = path),
     "delivery failed"
@@ -76,6 +78,7 @@ test_that("evidence failures are visible without changing execution status", {
   expect_warning(
     result <- dr_product("orders") |>
       dr_add_source(data.frame(id = 1L)) |>
+      dr_add_contract(c(id = "integer")) |>
       dr_run(evidence = path),
     "evidence"
   )

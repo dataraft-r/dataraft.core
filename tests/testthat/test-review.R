@@ -15,6 +15,7 @@ test_that("review defaults to the retained failure and invisibly returns display
   )
   expect_length(shown, 0)
   product <- dr_product("orders", data.frame(amount = c(-2, 1, -3))) |>
+    dr_add_contract(c(amount = "numeric")) |>
     dr_add_quality(list(positive = ~ amount >= 0))
   expect_error(
     dr_trial(product) |> dr_collect(),

@@ -1,5 +1,6 @@
 test_that("blocked results explain actual checks without counting rows twice", {
   definition <- dr_product("orders", data.frame(amount = c(1, -2, 3))) |>
+    dr_add_contract(c(amount = "numeric")) |>
     dr_add_quality(list(amount = ~ amount >= 0))
   result <- dr_run(definition, stop_on_failure = FALSE)
   expect_equal(dr_status(result)$outcome, "blocked")
@@ -18,7 +19,8 @@ test_that("blocked results explain actual checks without counting rows twice", {
 })
 
 test_that("execution summaries distinguish completion from publication and redact errors", {
-  done <- dr_run(dr_product("orders", data.frame(id = 1L)))
+  done <- dr_run(dr_product("orders", data.frame(id = 1L),
+    contract = c(id = "integer")))
   expect_match(dr_status(done)$message, "completed", fixed = TRUE)
   expect_false(grepl("published", dr_status(done)$message, fixed = TRUE))
   missing <- run_result("secret-run-id", "missing")
@@ -88,6 +90,7 @@ test_that("large diagnoses stay concise without claiming allowed checks blocked"
 
 test_that("default failed runs explain checks and retain inspectable evidence", {
   definition <- dr_product("orders", data.frame(amount = c(1, -2, 3))) |>
+    dr_add_contract(c(amount = "numeric")) |>
     dr_add_quality(list(amount = ~ amount >= 0))
   expect_snapshot(error = TRUE, dr_run(definition))
   failure <- tryCatch(dr_run(definition), dr_run_failed = identity)
@@ -115,6 +118,7 @@ test_that("default failed runs explain checks and retain inspectable evidence", 
 
 test_that("nested failures surface upstream evidence without reexecuting sources", {
   raw <- dr_product("raw", data.frame(amount = -2)) |>
+    dr_add_contract(c(amount = "numeric")) |>
     dr_add_quality(list(amount = ~ amount > 0))
   prepared <- dr_product("prepared", raw)
   report <- dr_product("report", prepared)

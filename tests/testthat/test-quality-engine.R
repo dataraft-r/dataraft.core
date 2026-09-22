@@ -30,6 +30,7 @@ test_that("simple formulas and reusable rule lists share the optional engine", {
   checks <- list(positive = ~ amount > 0, known = ~ kind %in% c("a", "b"))
   definition <- dr_product("orders") |>
     dr_add_source(data.frame(amount = c(1, 2), kind = c("a", "b"))) |>
+    dr_add_contract(c(amount = "numeric", kind = "character")) |>
     dr_add_quality(checks, engine = "pointblank")
   expect_equal(
     vapply(definition$quality, `[[`, character(1), "engine"),

@@ -6,6 +6,10 @@
 #' Diagnostic readers close owned connections after collecting bounded rows.
 #' Write sessions retain coordination until the explicit caller scope exits.
 #' Layer methods reject configurations unsupported by the adapter.
+#' Load the provider package before passing shorthand paths or serialized
+#' provider objects. Core does not discover or load sibling packages by name;
+#' the metapackage loads its declared providers. Explicit provider constructors
+#' also load their namespace and register the corresponding methods.
 #' @param x A backend provider, destination or target adapter.
 #' @param source A file source to archive.
 #' @param asset,release Exact asset and release identifiers.

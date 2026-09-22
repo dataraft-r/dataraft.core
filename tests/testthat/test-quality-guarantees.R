@@ -114,3 +114,22 @@ test_that("deterministic package helpers are accepted without forcing user promi
     class = "dataraft_error_quality_volatile")
   expect_false(called)
 })
+
+
+test_that("preflight rejects legacy volatile rules before executing any predicate", {
+  rule <- dr_quality_rule("legacy", ~ stats::runif(1) > 0)
+  rule$volatile <- NULL
+  expect_error(dr_check_component(rule),
+    class = "dataraft_error_quality_volatile")
+  calls <- 0L
+  diagnostic <- dr_quality_rule("explicit", function(data) {
+    calls <<- calls + 1L
+    stats::runif(1) > 0
+  }, volatile = TRUE)
+  expect_invisible(dr_check_component(diagnostic))
+  expect_identical(calls, 0L)
+  product <- dr_product("declared", data.frame(x = 1L)) |>
+    dr_add_contract(c(x = "integer")) |>
+    dr_add_quality(~ stats::runif(1) > 0, volatile = TRUE)
+  expect_invisible(dr_check_component(product$quality[[1L]]))
+})

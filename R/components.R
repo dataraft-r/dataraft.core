@@ -305,6 +305,7 @@ dr_check_component.dr_rule <- function(x, ...) {
       "Use a one-sided quality formula, for example ~ amount >= 0."
     )
   }
+  assert_quality_volatility(x)
   invisible(x)
 }
 
