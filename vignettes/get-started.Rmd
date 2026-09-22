@@ -52,7 +52,10 @@ Keep these optional arguments out of the first delivery definition. Start with
 shape and identity, then compose the parts that change independently:
 
 ```{r}
-shape <- dr_contract("orders", columns = c(id = "integer", amount = "numeric"))
+shape <- dr_contract(
+  "orders",
+  columns = c(id = "integer", amount = "numeric", region = "character")
+)
 positive <- dr_quality_rule(~ amount >= 0, action = "block", threshold = 0)
 orders <- dr_product("orders") |>
   dr_add_contract(shape) |>
@@ -66,6 +69,9 @@ flow <- dr_workflow() |>
   dr_add_source(data.frame(id = 1:2, amount = c(10, 20)), name = "delivery")
 dr_trial(flow) |> dr_collect()
 ```
+
+The contract describes the final output, including `region` added by the lookup.
+The input delivery supplies only `id` and `amount`; checks run after preparation.
 
 `dr_contract()` needs only the identity and expected columns here; supply `key`,
 `grain` or governance fields when those guarantees are known. `dr_product()` needs
