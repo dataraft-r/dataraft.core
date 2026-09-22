@@ -1,0 +1,7 @@
+url: https://dataraft-r.github.io/dataraft/components/dataraft.core/
+template:
+  bootstrap: 5
+reference:
+  - title: Function reference
+    contents:
+      - matches(".")
