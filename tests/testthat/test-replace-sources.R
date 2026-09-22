@@ -115,7 +115,7 @@ test_that("corrected definitions reuse existing targets caching", {
   script <- function(amount) {
     writeLines(
       c(
-        "library(dataraft)",
+        "library(dataraft.core)",
         "orders_definition <- dr_product('orders', data.frame(amount = 1))",
         "total_definition <- dr_product('total', orders_definition)",
         paste0(
@@ -125,7 +125,7 @@ test_that("corrected definitions reuse existing targets caching", {
         ),
         "total_definition <- dr_replace_sources(total_definition, orders = fresh_definition)",
         "unrelated_definition <- dr_product('unrelated', data.frame(id = 1L))",
-        "dr_as_targets(list(total_definition, unrelated_definition), evidence = 'evidence')"
+        "dataraft.adapters::dr_as_targets(list(total_definition, unrelated_definition), evidence = 'evidence')"
       ),
       "_targets.R"
     )
