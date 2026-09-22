@@ -258,8 +258,10 @@ dr_add_quality <- function(
   engine = NULL,
   action = NULL,
   threshold = NULL,
-  dimension = NULL
+  dimension = NULL,
+  volatile = NULL
 ) {
+  if (!is.null(volatile)) flag(volatile, "volatile")
   old_count <- length(x$quality)
   x <- editable_product(x)
   x$quality <- normalize_quality_rules(
@@ -271,6 +273,7 @@ dr_add_quality <- function(
   if (length(x$quality) > old_count) {
     for (i in seq.int(old_count + 1L, length(x$quality))) {
       rule <- x$quality[[i]]
+      if (!is.null(volatile)) rule$volatile <- volatile
       if (!is.null(action)) {
         rule$action <- match.arg(action, c("block", "warn", "quarantine"))
         rule$severity <- if (action == "warn") "warning" else "error"

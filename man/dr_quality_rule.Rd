@@ -15,7 +15,8 @@ dr_quality_rule(
   engine = c("native", "pointblank"),
   action = NULL,
   threshold = NULL,
-  dimension = NULL
+  dimension = NULL,
+  volatile = FALSE
 )
 
 dr_quality_counts(n_failed, n_total)
@@ -64,6 +65,8 @@ rejected rows until an execution path actually removes them.}
 
 \item{threshold}{Permitted fraction of failed test units, from zero to one. For
 quarantine, every rejected row is removed regardless of threshold.}
+
+\item{volatile}{Whether changing state is intentional. Volatile evidence is diagnostic only and cannot authorize publication or approval. Detection of known time and randomness calls is not a proof of determinism.}
 
 \item{dimension}{Optional ODCS quality dimension.}
 

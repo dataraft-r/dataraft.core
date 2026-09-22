@@ -118,7 +118,7 @@ dr_incidents <- function(x) {
     checks <- dplyr::bind_rows(checks)
     checks <- checks[
       checks$status %in%
-        c("failed", "fail", "error", "not_checked"),
+        c("failed", "fail", "error", "not_checked", "unvalidated"),
       ,
       drop = FALSE
     ]

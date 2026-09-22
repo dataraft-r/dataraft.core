@@ -108,6 +108,8 @@ dr_quality_report <- function(
       )
       status <- if (!nrow(quality)) {
         "Not checked"
+      } else if (identical(quality_failure_status(quality), "unvalidated")) {
+        "Unvalidated"
       } else if (!quality_ok(quality)) {
         "Blocked"
       } else if (any(quality$status == "warning")) {

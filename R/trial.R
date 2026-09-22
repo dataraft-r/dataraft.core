@@ -4,7 +4,9 @@
 #' catalogs and durable run evidence disabled throughout its dependency graph.
 #' The original definition is unchanged. Source and transformation callbacks are
 #' ordinary user code: their own side effects cannot be prevented by the framework.
-#' Read-only access to existing published inputs is still allowed.
+#' Read-only access to existing published inputs is still allowed. Without a
+#' declared contract a trial is `unvalidated`, with collectable exploratory data.
+#' A successful trial checks the data, not target permissions, capacity or conflicts.
 #' @param x Product or modular [dr_workflow()] definition.
 #' @param data,sources Replacement delivery or named sources, as in [dr_run()].
 #' @param stop_on_failure Defaults to `FALSE`: a failed trial returns a result

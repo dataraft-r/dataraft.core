@@ -14,7 +14,8 @@ dr_add_quality(
   engine = NULL,
   action = NULL,
   threshold = NULL,
-  dimension = NULL
+  dimension = NULL,
+  volatile = NULL
 )
 }
 \arguments{
@@ -38,6 +39,8 @@ rejected rows until an execution path actually removes them.}
 
 \item{threshold}{Alias for max_failure, a fraction from zero to one. For
 quarantine, every rejected row is removed regardless of threshold.}
+
+\item{volatile}{Whether changing state is intentional. Volatile rules provide diagnostic evidence only.}
 
 \item{dimension}{Optional ODCS quality dimension.}
 }

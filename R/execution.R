@@ -214,7 +214,8 @@ dr_publish.default <- function(x, name = NULL, to = NULL, ...) {
 #' @param ... Arguments passed to dplyr when collecting retained data. Lake
 #'   results collect the complete pinned release and accept no extra arguments.
 #' @returns An ordinary tibble for a table product, or a dm for a model
-#'   product. Failed or blocked runs cannot be collected.
+#'   product. Failed or blocked runs cannot be collected. Unvalidated exploratory
+#'   results can be collected but never authorize writing or release reuse.
 #' @name dr_collect
 #' @importFrom dplyr collect
 #' @export
@@ -244,7 +245,7 @@ collect.dr_product_workflow <- collect.dr_product
 #' @rdname dr_collect
 #' @export
 collect.dr_run_result <- function(x, ...) {
-  if (!x$status %in% c("completed", "published", "cached")) {
+  if (!x$status %in% c("completed", "published", "cached", "unvalidated")) {
     abort(
       subclass = failure_subclass(x),
       c(
@@ -342,7 +343,7 @@ dr_run.dr_product <- function(
       length(result$status) != 1L ||
       is.na(result$status) ||
       !result$status %in%
-        c("completed", "published", "cached", "blocked", "error", "missing")
+        c("completed", "published", "cached", "blocked", "unvalidated", "error", "missing")
   ) {
     abort(
       subclass = "dataraft_error_definition",
@@ -458,14 +459,17 @@ dr_execute_target.default <- function(target, product, ...) {
         attr(data, "dr_transform_metadata") <- NULL
       }
       data <- table_result(data, "The final transformation")
+      # Freeze a lazy source once before checking and writing it.
+      if (is_lazy_table(data)) data <- dr_collect(data)
       contract <- product_contract(product, data)
       partition <- prepare_quality_candidate(data, contract)
       data <- partition$data
       quality <- partition$quality
       if (!quality_ok(quality)) {
-        blocked <- run_result(run, "blocked", quality = quality)
+        blocked <- run_result(run, quality_failure_status(quality), quality = quality)
         blocked$quarantine <- partition$quarantine
         blocked$diagnostic <- list(data = data, contract = contract)
+        if (identical(blocked$status, "unvalidated")) blocked$data <- data
         blocked
       } else {
         metadata <- list(
@@ -854,4 +858,14 @@ failure_subclass <- function(result) {
   }
   domains <- grep("^dataraft_error_", class(result$error), value = TRUE)
   if (length(domains)) domains else "dataraft_error_execution"
+}
+
+quality_failure_status <- function(quality) {
+  if (any(quality$status %in% c("failed", "error", "not_checked"))) {
+    "blocked"
+  } else if (any(quality$status == "unvalidated")) {
+    "unvalidated"
+  } else {
+    "blocked"
+  }
 }

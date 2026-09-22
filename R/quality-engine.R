@@ -63,12 +63,13 @@ quality_formula_units <- function(data, predicate) {
 
 #' @export
 dr_run_quality.dr_rule <- function(rule, data, ...) {
+  assert_quality_volatility(rule)
   if (identical(rule$action, "quarantine")) {
     rule$severity <- "error"
     rule$max_failure <- 0
   }
   if (identical(rule$engine, "pointblank")) {
-    return(pointblank_results(rule, data, ...))
+    return(volatile_quality_evidence(pointblank_results(rule, data, ...), rule))
   }
   if (!identical(rule$engine, "r")) {
     abort(
@@ -120,7 +121,7 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
     )
   }
   out$engine <- "r"
-  out
+  volatile_quality_evidence(out, rule)
 }
 
 
@@ -146,7 +147,7 @@ check_quality_output <- function(rows) {
     anyNA(rows$status) ||
       !all(
         rows$status %in%
-          c("passed", "warning", "failed", "error", "not_checked")
+          c("passed", "warning", "failed", "error", "not_checked", "unvalidated")
       ) ||
       anyNA(rows$rule) ||
       any(!nzchar(rows$rule)) ||
@@ -191,11 +192,17 @@ evaluate_rules <- function(
   rows <- lapply(rules, function(rule) {
     tryCatch(
       {
+        assert_quality_volatility(rule)
         result <- dr_run_quality(rule, data, keep_agent = keep_agents)
         if (keep_agents) {
           agents[[rule$name]] <<- attr(result, "pointblank_agent")
         }
-        check_quality_output(result)
+        result <- check_quality_output(result)
+        if (isTRUE(rule$volatile)) {
+          result$status[result$status %in% c("passed", "warning")] <- "unvalidated"
+          result$message <- "Volatile rule: diagnostic evidence only; publication and approval are disabled."
+        }
+        result
       },
       error = function(e) {
         if (keep_errors) {

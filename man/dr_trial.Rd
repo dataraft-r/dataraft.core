@@ -23,7 +23,9 @@ Executes the product's sources, transformations and checks, with targets,
 catalogs and durable run evidence disabled throughout its dependency graph.
 The original definition is unchanged. Source and transformation callbacks are
 ordinary user code: their own side effects cannot be prevented by the framework.
-Read-only access to existing published inputs is still allowed.
+Read-only access to existing published inputs is still allowed. Without a
+declared contract a trial is \code{unvalidated}, with collectable exploratory data.
+A successful trial checks the data, not target permissions, capacity or conflicts.
 }
 \examples{
 orders <- dr_product("orders", data.frame(amount = c(10, 20))) |>

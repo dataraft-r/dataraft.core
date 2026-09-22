@@ -237,6 +237,10 @@ dr_contract <- function(
 #'   rejected rows until an execution path actually removes them.
 #' @param threshold Permitted fraction of failed test units, from zero to one. For
 #'   quarantine, every rejected row is removed regardless of threshold.
+#' @param volatile Whether a rule intentionally uses changing external state, time
+#'   or randomness. Such rules can be evaluated for diagnosis but never authorize
+#'   publication, cache reuse or approval. Known volatile calls are rejected unless
+#'   declared. Static detection cannot prove arbitrary callbacks deterministic.
 #' @param dimension Optional ODCS quality dimension.
 #' @param severity Compatibility argument: `"error"` corresponds to
 #'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
@@ -276,8 +280,10 @@ dr_quality_rule <- function(
   engine = c("native", "pointblank"),
   action = NULL,
   threshold = NULL,
-  dimension = NULL
+  dimension = NULL,
+  volatile = FALSE
 ) {
+  flag(volatile, "volatile")
   if (!is.null(action)) {
     action <- match.arg(action, c("block", "warn", "quarantine"))
     if (!missing(severity)) {
@@ -355,7 +361,8 @@ dr_quality_rule <- function(
       engine = engine,
       engine_explicit = engine_explicit,
       action = action,
-      dimension = dimension
+      dimension = dimension,
+      volatile = volatile
     ),
     class = "dr_rule"
   )
@@ -764,6 +771,13 @@ dr_validate.default <- function(
     errors <- c(errors, attr(rules, "dr_errors"))
   }
   out <- dplyr::bind_rows(result)
+  if (isTRUE(contract$automatic_schema)) {
+    inferred <- out$rule %in% c("schema", "types")
+    out$status[inferred] <- "unvalidated"
+    out$message[inferred] <- "No declared contract: observed schema is not validation evidence."
+    out$n_failed[inferred] <- NA_real_
+    out$n_total[inferred] <- NA_real_
+  }
   out$stage <- stage
   out$engine[
     out$engine == "contract" &

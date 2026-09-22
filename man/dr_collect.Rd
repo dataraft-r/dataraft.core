@@ -23,7 +23,8 @@ results collect the complete pinned release and accept no extra arguments.}
 }
 \value{
 An ordinary tibble for a table product, or a dm for a model
-product. Failed or blocked runs cannot be collected.
+product. Failed or blocked runs cannot be collected. Unvalidated exploratory
+results can be collected but never authorize writing or release reuse.
 }
 \description{
 In-memory results retain their ordinary table. Lake results read their exact

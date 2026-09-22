@@ -21,3 +21,11 @@
 * Initial independent DataRaft package.
 
 * Add `dr_last_failure()` and standalone getting-started and extension articles.
+
+* Runs without a declared contract now return `unvalidated` evidence and do not
+  call writers. Observed columns and types are no longer presented as guarantees.
+* Generic execution collects a lazy delivery once before quality evaluation, so
+  its writer receives the same snapshot that was checked.
+* Quality rules reject recognizable random and time-dependent calls unless
+  `volatile = TRUE` is declared. Volatile checks are diagnostic only and cannot
+  authorize publication or approval. Arbitrary callback purity is not guaranteed.
