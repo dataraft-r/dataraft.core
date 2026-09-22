@@ -85,6 +85,7 @@ for (generic in c("dr_check_component", "dr_inspect", "dr_capabilities", "dr_wri
     get(paste0(generic, ".example_target")), envir = asNamespace("dataraft.core"))
 }
 product <- dr_product("orders", source) |>
+  dr_add_contract(dr_contract(columns = c(id = "integer", amount = "numeric"))) |>
   dr_add_quality(~ amount >= 0) |>
   dr_set_target(example_target(client, "checked"))
 result <- dr_publish(product)

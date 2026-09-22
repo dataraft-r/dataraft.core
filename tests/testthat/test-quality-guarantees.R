@@ -7,6 +7,8 @@ test_that("inferred schemas are explicitly unvalidated and remain inspectable", 
   expect_identical(checks$status[checks$rule == "schema"], "unvalidated")
   expect_identical(checks$status[checks$rule == "types"], "unvalidated")
   expect_false(quality_ok(result$quality))
+  expect_identical(result$metadata$schema, c(amount = "numeric"))
+  expect_equal(result$metadata$rows, 2L)
   path <- withr::local_tempfile(fileext = ".html")
   dr_quality_report(result, path)
   expect_match(paste(readLines(path), collapse = ""), "Unvalidated")
@@ -55,13 +57,16 @@ test_that("generic lazy execution checks and retains one materialization", {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   withr::defer(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "delivery", data.frame(id = 1L))
-  check <- function(data) {
-    DBI::dbExecute(con, "UPDATE delivery SET id = -1")
-    data$id > 0
-  }
+  rule <- dr_quality_rule("positive", ~ id > 0)
+  class(rule) <- c("snapshot_rule", class(rule))
+  local_adapter_method("dr_run_quality", "snapshot_rule",
+    function(rule, data, ...) {
+      DBI::dbExecute(con, "UPDATE delivery SET id = -1")
+      dr_run_quality.dr_rule(rule, data, ...)
+    })
   product <- dr_product("snapshot", dplyr::tbl(con, "delivery")) |>
     dr_add_contract(dr_contract(columns = c(id = "integer"),
-      rules = list(dr_quality_rule("positive", check))))
+      rules = list(rule)))
   written <- NULL
   local_adapter_method("dr_check_component", "snapshot_target",
     function(x, ...) invisible(x))

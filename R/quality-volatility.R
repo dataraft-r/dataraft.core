@@ -31,7 +31,7 @@ quality_volatile_calls <- function(check, seen = list(), depth = 0L) {
       name <- as.character(head[[3L]])
     }
     found <- if (name %in% known) name else character()
-    if (identical(name, "sql") && length(node) > 1L && is.character(node[[2L]])) {
+    if (name %in% c("sql", "SQL") && length(node) > 1L && is.character(node[[2L]])) {
       if (grepl("\\b(RANDOM|RAND|NOW|CURRENT_TIMESTAMP|CURRENT_DATE)\\b", node[[2L]], ignore.case = TRUE)) {
         found <- c(found, "volatile SQL")
       }

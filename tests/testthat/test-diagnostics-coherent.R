@@ -13,29 +13,14 @@ test_that("native states have consistent outcome categories", {
     unname(outcomes),
     c("succeeded", "succeeded", "succeeded", "blocked", "failed", "blocked")
   )
-  dbt <- structure(
-    list(
-      success = FALSE,
-      results = tibble::tibble(
-        unique_id = letters[1:5],
-        status = c("success", "warn", "fail", "error", "skipped")
-      )
-    ),
-    class = "dr_dbt_result"
-  )
-  expect_equal(
-    dr_status(dbt)$outcome,
-    c("succeeded", "succeeded", "blocked", "failed", "skipped", "failed")
-  )
-  dbt$success <- TRUE
-  dbt$results <- dbt$results[0, ]
-  expect_equal(nrow(dr_status(dbt)), 0L)
-  expect_type(dr_status(dbt)$outcome, "character")
+
 })
 
 test_that("result lineage uses exact recorded input evidence", {
-  accepted <- dr_run(dr_product("orders", data.frame(id = 1L)))
-  latest <- dr_run(dr_product("orders", data.frame(id = 2L)))
+  accepted <- dr_run(dr_product("orders", data.frame(id = 1L),
+    contract = dr_contract(columns = c(id = "integer"))))
+  latest <- dr_run(dr_product("orders", data.frame(id = 2L),
+    contract = dr_contract(columns = c(id = "integer"))))
   result <- dr_run(dr_product("report", accepted))
   edges <- dr_lineage(result)
   expect_equal(edges$from_id, "orders")

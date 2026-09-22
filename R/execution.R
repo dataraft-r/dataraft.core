@@ -466,6 +466,14 @@ dr_execute_target.default <- function(target, product, ...) {
       if (!quality_ok(quality)) {
         blocked <- run_result(run, quality_failure_status(quality), quality = quality)
         blocked$quarantine <- partition$quarantine
+        blocked$metadata <- list(
+          product = product$id,
+          column_lineage = column_lineage,
+          transformations = transform_metadata,
+          schema = infer_column_types(data),
+          rows = count_rows(data),
+          lineage = list(inputs = input, to = product$id)
+        )
         blocked$diagnostic <- list(data = data, contract = contract)
         if (identical(blocked$status, "unvalidated")) blocked$data <- data
         blocked

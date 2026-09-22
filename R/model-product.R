@@ -178,12 +178,15 @@ dr_run.dr_model_product <- function(
   result$quality <- dplyr::bind_rows(checks)
   good <- vapply(
     result$members,
-    function(m) m$status == "completed",
+    function(m) m$status %in% c("completed", "unvalidated"),
     logical(1)
   )
   if (!all(good)) {
     result$status <- "blocked"
   } else {
+    if (any(vapply(result$members, function(m) identical(m$status, "unvalidated"), logical(1)))) {
+      result$status <- "unvalidated"
+    }
     candidate <- dm::dm(!!!lapply(result$members, dr_collect))
     checked <- tryCatch(
       dm_keys(candidate, x$primary_keys, x$foreign_keys, TRUE),
@@ -233,13 +236,15 @@ dr_run.dr_model_product <- function(
       "previous is available only when publishing to a lake."
     )
   }
-  if (stop_on_failure && result$status == "blocked") {
+  if (stop_on_failure &&
+      (result$status == "blocked" ||
+        (result$status == "unvalidated" && !is.null(x$target)))) {
     abort(
       subclass = failure_subclass(result),
       paste(
         "Model",
         x$id,
-        "failed checks. Use result <- dr_last_failure() and inspect dr_quality_report(result) and dr_quality_errors(result)."
+        "has no validated output. Use result <- dr_last_failure() and inspect dr_quality_report(result) and dr_quality_errors(result)."
       ),
       "dr_model_failed",
       result = result
@@ -252,7 +257,7 @@ dr_run.dr_model_product <- function(
 #' @export
 collect.dr_model_result <- function(x, ...) {
   rlang::check_dots_empty()
-  if (!x$status %in% c("completed", "published")) {
+  if (!x$status %in% c("completed", "published", "unvalidated")) {
     abort(
       subclass = failure_subclass(x),
       "The model failed checks. Use result <- dr_last_failure(), then inspect dr_quality_report(result), dr_quality_rows(result) and dr_quality_errors(result).",

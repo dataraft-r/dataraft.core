@@ -47,5 +47,5 @@ test_that("plain console diagnostics remain readable with NO_COLOR", {
   result <- dr_trial(dr_product("orders", data.frame(id = 1L)))
   output <- paste(capture.output(print(result)), collapse = "\n")
   expect_false(grepl("\033[", output, fixed = TRUE))
-  expect_match(output, "completed")
+  expect_match(output, "unvalidated")
 })

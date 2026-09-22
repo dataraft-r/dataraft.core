@@ -39,6 +39,7 @@ dr_replace_sources <- function(x, ...) {
 
 
 replace_sources_list <- function(x, replacements) {
+  rlang::local_error_call(rlang::caller_env())
   dr_replace_source_bindings(x, replacements)
 }
 
@@ -48,6 +49,7 @@ replace_sources_list <- function(x, replacements) {
 #' @returns An updated definition, without executing it.
 #' @export
 dr_replace_source_bindings <- function(x, replacements) {
+  rlang::local_error_call(rlang::caller_env())
   nms <- names(replacements)
   if (
     !length(replacements) ||

@@ -21,8 +21,10 @@ test_that("corrections update shared product references and lookup inputs lazily
 })
 
 test_that("root slots explicitly replace results while other pinned inputs persist", {
-  accepted <- dr_run(dr_product("orders", data.frame(id = 1L)))
-  newer <- dr_run(dr_product("orders", data.frame(id = 2L)))
+  accepted <- dr_run(dr_product("orders", data.frame(id = 1L),
+    contract = dr_contract(columns = c(id = "integer"))))
+  newer <- dr_run(dr_product("orders", data.frame(id = 2L),
+    contract = dr_contract(columns = c(id = "integer"))))
   root <- dr_product("root") |>
     dr_add_source(accepted, name = "current") |>
     dr_add_source(accepted, name = "historical")

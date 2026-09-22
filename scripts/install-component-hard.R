@@ -53,4 +53,5 @@ stopifnot(
   !requireNamespace("duckdb", quietly = TRUE),
   !requireNamespace("arrow", quietly = TRUE)
 )
+testthat::set_max_fails(Inf)
 testthat::test_local(stop_on_failure = TRUE)

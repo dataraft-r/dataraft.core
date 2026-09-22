@@ -8,12 +8,23 @@ model_fixture <- function() {
     dm::dm_add_fk(policies, id, customers)
 }
 
+model_contract_fixture <- function() {
+  list(
+    customers = dr_contract(columns = c(id = "integer"), key = "id"),
+    policies = dr_contract(
+      columns = c(policy = "integer", id = "integer", amount = "numeric"),
+      key = "policy"
+    )
+  )
+}
+
 test_that("models reuse contracts and diagnose a named table", {
   skip_if_not_installed("dm")
   spec <- dr_product(
     "portfolio",
     model_fixture(),
     contracts = list(
+      customers = model_contract_fixture()$customers,
       policies = dr_contract(
         columns = c(policy = "integer", id = "integer", amount = "numeric"),
         key = "policy",
@@ -48,7 +59,7 @@ test_that("model publication pins all members and rejects stale correction", {
     backend = Sys.getenv("DATARAFT_TEST_BACKEND", "duckdb")
   )
   dr_close_lake(initialized)
-  spec <- dr_product("portfolio", model_fixture())
+  spec <- dr_product("portfolio", model_fixture(), contracts = model_contract_fixture())
   first <- dr_publish(spec, to = root)
   second <- dr_publish(
     spec,
@@ -106,7 +117,7 @@ test_that("a failed multi-table transaction leaves no partial release", {
     backend = Sys.getenv("DATARAFT_TEST_BACKEND", "duckdb")
   )
   withr::defer(dr_close_lake(lake))
-  spec <- dr_product("portfolio", model_fixture())
+  spec <- dr_product("portfolio", model_fixture(), contracts = model_contract_fixture())
   first <- dr_publish(spec, to = lake)
   before <- dr_releases(lake)
   real_insert <- insert_meta
@@ -134,7 +145,8 @@ test_that("table publication rejects a stale prior result", {
     backend = Sys.getenv("DATARAFT_TEST_BACKEND", "duckdb")
   )
   dr_close_lake(initialized)
-  spec <- dr_product("orders", data.frame(id = 1L))
+  spec <- dr_product("orders", data.frame(id = 1L),
+    contract = dr_contract(columns = c(id = "integer")))
   first <- dr_publish(spec, to = root)
   second <- dr_publish(
     spec,
@@ -163,7 +175,8 @@ test_that("model member names and established contracts cannot be bypassed", {
     "portfolio",
     model_fixture(),
     contracts = list(
-      customers = dr_contract(columns = c(id = "integer"), key = "id")
+      customers = dr_contract(columns = c(id = "integer"), key = "id"),
+      policies = model_contract_fixture()$policies
     )
   )
   first <- dr_publish(spec, to = lake)
@@ -171,7 +184,9 @@ test_that("model member names and established contracts cannot be bypassed", {
     dr_publish(dr_product("portfolio", model_fixture()), to = lake),
     error = identity
   )
-  expect_match(conditionMessage(error), "Keep the explicit contract")
+  expect_s3_class(error, "dr_model_failed")
+  expect_identical(error$result$status, "unvalidated")
+  expect_identical(dr_releases(lake, "portfolio")$release_id, first$release_id)
   error <- tryCatch(
     dr_write_data(lake, data.frame(id = 9L), "portfolio.customers"),
     error = identity
@@ -185,7 +200,7 @@ test_that("nested member selections reuse the active publication connection", {
   skip_if_not_installed("dm")
   skip_if_not_installed("duckdb")
   root <- withr::local_tempdir()
-  first <- dr_publish(dr_product("portfolio", model_fixture()), to = root)
+  first <- dr_publish(dr_product("portfolio", model_fixture(), contracts = model_contract_fixture()), to = root)
   lake <- dr_open_lake(root)
   withr::defer(dr_close_lake(lake))
   real_connect <- dr_connect_lake
@@ -199,14 +214,15 @@ test_that("nested member selections reuse the active publication connection", {
     real_connect(config, read_only = read_only)
   })
   selected <- dr_product("summary", first, table = "policies") |>
-    dr_add_lookup(dr_product("lookup", first, table = "customers"), by = "id")
+    dr_add_lookup(dr_product("lookup", first, table = "customers"), by = "id") |>
+    dr_add_contract(model_contract_fixture()$policies)
   out <- dr_publish(selected, to = lake)
   expect_equal(dr_collect(out)$amount, c(10, 20))
 })
 
 test_that("model lookups use table names without an extra wrapper product", {
   skip_if_not_installed("dm")
-  checked <- dr_trial(dr_product("portfolio", model_fixture()))
+  checked <- dr_trial(dr_product("portfolio", model_fixture(), contracts = model_contract_fixture()))
   selected <- dr_product("summary", checked, table = "policies") |>
     dr_add_lookup(checked, table = "customers", by = "id")
   expect_equal(dr_collect(dr_trial(selected))$amount, c(10, 20))
@@ -219,7 +235,7 @@ test_that("model lookups use table names without an extra wrapper product", {
 test_that("a model never silently chooses a metric grain", {
   skip_if_not_installed("dataraft.metrics")
   skip_if_not_installed("dm")
-  result <- dr_trial(dr_product("portfolio", model_fixture()))
+  result <- dr_trial(dr_product("portfolio", model_fixture(), contracts = model_contract_fixture()))
   error <- tryCatch(
     dr_measure(
       result,
@@ -228,4 +244,31 @@ test_that("a model never silently chooses a metric grain", {
     error = identity
   )
   expect_match(conditionMessage(error), "Choose a reporting table")
+})
+
+
+test_that("uncontracted model exploration is unvalidated and cannot publish", {
+  skip_if_not_installed("dm")
+  spec <- dr_product("observed_model", model_fixture())
+  result <- dr_run(spec, write = FALSE)
+  expect_identical(result$status, "unvalidated")
+  expect_s3_class(dr_collect(result), "dm")
+  expect_true(all(vapply(result$members,
+    function(member) identical(member$status, "unvalidated"), logical(1))))
+  expect_identical(tail(result$quality$status, 1), "passed")
+  writes <- 0L
+  local_adapter_method("dr_check_component", "model_unvalidated_target",
+    function(x, ...) invisible(x))
+  local_adapter_method("dr_publish_model_result", "model_unvalidated_target",
+    function(target, product, result, previous = NULL, ...) {
+      writes <<- writes + 1L
+      result
+    })
+  targeted <- dr_set_target(spec, structure(list(), class = "model_unvalidated_target"))
+  blocked <- dr_run(targeted, stop_on_failure = FALSE)
+  expect_identical(blocked$status, "unvalidated")
+  expect_identical(writes, 0L)
+  expect_error(dr_run(targeted), class = "dr_model_failed")
+  invalid <- dr_trial(spec, sources = list(customers = data.frame(id = 1L)))
+  expect_identical(invalid$status, "blocked")
 })

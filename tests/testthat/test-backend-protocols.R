@@ -34,3 +34,25 @@ test_that("read context does not leak into existing source adapters", {
   expect_identical(dr_read_input(reader, context = list(connection = "unused")),
     data.frame(value = 1))
 })
+
+test_that("the core implementation contains no sibling namespace calls", {
+  namespace <- asNamespace("dataraft.core")
+  bindings <- mget(ls(namespace, all.names = TRUE), namespace, inherits = FALSE)
+  sibling_calls <- function(expr) {
+    if (missing(expr)) return(character())
+    if (!is.call(expr) && !is.pairlist(expr) && !is.expression(expr)) {
+      return(character())
+    }
+    if (is.call(expr) && identical(expr[[1]], as.name("::"))) {
+      package <- as.character(expr[[2]])
+      if (startsWith(package, "dataraft.") && package != "dataraft.core") {
+        return(package)
+      }
+    }
+    unlist(lapply(as.list(expr), sibling_calls), use.names = FALSE)
+  }
+  calls <- unlist(lapply(Filter(is.function, bindings), function(fn) {
+    sibling_calls(body(fn))
+  }), use.names = FALSE)
+  expect_length(calls, 0L)
+})
