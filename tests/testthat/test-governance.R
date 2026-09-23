@@ -64,6 +64,8 @@ test_that("multiple output ports share one checked delivery", {
     dr_add_source(function() { reads <<- reads + 1L; data.frame(id = 1L) }) |>
     dr_add_output(dr_output("primary", dataraft.adapters::dr_target_rds(first))) |>
     dr_add_output(dr_output("secondary", dataraft.adapters::dr_target_rds(second)))
+  expect_error(dr_run(product, cache = TRUE), "cache = FALSE")
+  expect_equal(reads, 0L)
   result <- dr_run(product)
   expect_equal(reads, 1L)
   expect_equal(result$status, "published")
