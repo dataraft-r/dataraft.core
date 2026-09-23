@@ -372,6 +372,9 @@ safe_run_evidence <- function(result, product = NULL) {
     quality = unname(lapply(checks, safe_fields, fields = check_fields)),
     inputs = safe_descriptors(result$inputs %||% metadata$inputs),
     outputs = safe_descriptor(result$outputs %||% metadata$outputs),
+    port_outputs = lapply(result$port_outputs %||% list(), function(port) {
+      list(status = port$status, output = safe_descriptor(port$output))
+    }),
     sla = lapply(metadata$sla %||% list(), function(check) {
       list(status = safe_scalar(check$status),
         business_date = as.character(check$business_date),
