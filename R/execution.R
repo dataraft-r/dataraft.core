@@ -306,6 +306,10 @@ dr_run.dr_product <- function(
     object <- dr_set_target(object, lake)
   }
   object <- apply_execution_defaults(object, execution)
+  if (write && length(object$output_ports) > 1L && isTRUE(list(...)$cache)) {
+    abort("Multiple output ports require cache = FALSE so every port receives the checked delivery.",
+      subclass = "dataraft_error_definition")
+  }
   policies <- if (write && !is.null(object$target)) {
     dr_assert_policies(object, event = "publish")
   } else NULL
@@ -377,6 +381,9 @@ dr_run.dr_product <- function(
   result$asset <- object$id
   result$started_at <- result$started_at %||% started
   result$finished_at <- result$finished_at %||% now()
+  if (write && length(object$output_ports) && identical(result$status, "published")) {
+    result <- publish_secondary_ports(object, result)
+  }
   result$backend <- result$backend %||% dr_inspect(object$target)$type
   result$warnings <- result$warnings %||% character()
   result$warning_conditions <- warnings
@@ -405,19 +412,23 @@ dr_run.dr_product <- function(
       validation_status = result$validation_status,
       quality = canonical(result$quality),
       inputs = result$inputs,
-      outputs = result$outputs
+      outputs = result$outputs,
+      port_outputs = result$port_outputs
     )
   )
-  if (write && identical(result$status, "published") && length(sla_ports)) {
+  if (write && length(sla_ports)) {
     delivered_at <- as.POSIXct(result$finished_at,
       format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
     if (is.na(delivered_at)) {
       abort("The target returned an invalid delivery timestamp for SLA evaluation.",
         subclass = "dataraft_error_definition")
     }
-    result$metadata$sla <- lapply(sla_ports, function(port) {
-      dr_check_sla(port$sla, business_date,
-        delivered_at = delivered_at, at = delivered_at)
+    published <- names(sla_ports)[vapply(names(sla_ports), function(id) {
+      identical(result$port_outputs[[id]]$status, "published")
+    }, logical(1))]
+    result$metadata$sla <- lapply(sla_ports[published], function(port) {
+      dr_check_sla(port$sla, business_date, delivered_at = delivered_at,
+        at = delivered_at)
     })
   }
   result$lifecycle <- tibble::tibble(
@@ -459,6 +470,40 @@ dr_run.dr_product <- function(
       parent = run_result_parent(result)
     )
   }
+  result
+}
+
+
+publish_secondary_ports <- function(product, result) {
+  ids <- names(product$output_ports)
+  result$port_outputs <- stats::setNames(list(list(status = "published",
+    output = result$outputs)), ids[[1]])
+  if (length(ids) == 1L) return(result)
+  checked_data <- tryCatch(dr_collect(result), error = identity)
+  for (id in ids[-1L]) {
+    if (inherits(checked_data, "error")) {
+      written <- checked_data
+    } else {
+      port <- product$output_ports[[id]]
+      written <- tryCatch(dr_write_target(port$endpoint, checked_data,
+        list(run_id = result$run_id, product = product$id,
+          contract = product$contract, metadata = result$metadata)),
+        error = identity)
+    }
+    if (inherits(written, "error") || !is.list(written)) {
+      result$port_outputs[[id]] <- list(status = "failed")
+      result$status <- "error"
+      result$port_error <- written
+      result$error <- simpleError(paste0("Output port `", id,
+        "` failed after earlier ports committed. Inspect result$port_outputs before retrying."))
+      break
+    }
+    result$port_outputs[[id]] <- list(status = "published", output = written)
+  }
+  for (id in setdiff(ids, names(result$port_outputs))) {
+    result$port_outputs[[id]] <- list(status = "not_attempted")
+  }
+  result$finished_at <- now()
   result
 }
 
