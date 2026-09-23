@@ -7,7 +7,7 @@
 dr_add_source(x, source, name = NULL, reader = NULL, replace = FALSE)
 }
 \arguments{
-\item{x}{A \code{\link[=dr_product]{dr_product()}} or modular \code{\link[=dr_workflow]{dr_workflow()}} definition.}
+\item{x}{A \code{\link[=dr_product]{dr_product()}} definition.}
 
 \item{source}{Data frame, file path, function or source adapter.}
 
@@ -26,8 +26,7 @@ one delivery with \verb{data =} at execution. For several primary sources, use a
 transformation that combines their named list before table operations.
 }
 \examples{
-flow <- dr_workflow() |>
-  dr_add_product(dr_product("orders")) |>
+flow <- dr_product("orders") |>
   dr_add_source(data.frame(id = 1:2, amount = c(25, 75)), name = "orders")
 dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, flow))
 }

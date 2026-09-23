@@ -82,10 +82,8 @@ test_that("Arrow profiles and quality checks use the same summaries", {
   expect_equal(dr_profile_data(table), dr_profile_data(data))
   rule <- dr_quality_rule("positive", ~ amount > 5)
   expect_equal(dr_run_quality(rule, table), dr_run_quality(rule, data))
-  definition <- dr_contract(
-    columns = c(id = "integer", amount = "numeric"),
-    required = character()
-  )
+  definition <- dr_contract(columns = c(id = "integer", amount = "numeric")) |>
+    dataraft.core::dr_contract_policy(required = character())
   expect_equal(dr_validate(table, definition), dr_validate(data, definition))
   query <- dplyr::filter(table, amount > 5)
   expected <- dplyr::filter(data, amount > 5)

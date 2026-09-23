@@ -1,8 +1,3 @@
-dr_replace_sources <- function(x, ...) {
-  replace_sources_list(x, list(...))
-}
-
-
 replace_sources_list <- function(x, replacements) {
   rlang::local_error_call(rlang::caller_env())
   nms <- names(replacements)

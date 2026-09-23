@@ -19,7 +19,7 @@ An updated specification. The original is unchanged.
 \description{
 Mirrors parsnip's separation of intent and implementation. Formula quality
 rules support \code{"native"} and \code{"pointblank"}; checked lookup specifications
-use dm (\code{"native"} is a compatibility alias). Engine selection never reads data or loads an
+use dm. Engine selection never reads data or loads an
 optional engine. Missing dependencies are reported at execution preflight.
 These engines implement individual operations, not the whole data platform.
 Storage is configured separately with \code{\link[=dr_set_target]{dr_set_target()}} or \code{dr_publish(to = )}.

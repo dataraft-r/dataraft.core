@@ -32,7 +32,7 @@ dr_contract_from <- function(
     args$required <- character()
   }
   contract <- do.call(
-    dr_contract,
+    new_contract,
     c(
       list(
         id = id,

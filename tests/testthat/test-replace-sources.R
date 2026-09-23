@@ -9,7 +9,7 @@ test_that("corrections update shared product references and lookup inputs lazily
     calls <<- calls + 1L
     data.frame(id = 1L, rate = 2)
   })
-  corrected <- dr_replace_sources(root, rates = fresh)
+  corrected <- dr_set_sources(root, rates = fresh, .recursive = TRUE)
   expect_equal(calls, 0L)
   expect_identical(root$sources$right$sources$rates, old)
   expect_identical(corrected$sources$right$sources$rates, fresh)
@@ -26,39 +26,55 @@ test_that("root slots explicitly replace results while other pinned inputs persi
   root <- dr_product("root") |>
     dr_add_source(accepted, name = "current") |>
     dr_add_source(accepted, name = "historical")
-  changed <- dr_replace_sources(root, current = newer)
+  changed <- dr_set_sources(root, current = newer, .recursive = TRUE)
   expect_identical(changed$sources$historical, root$sources$historical)
   expect_equal(dr_read_source(changed$sources$current)$id, 2L)
-  expect_snapshot(error = TRUE, dr_replace_sources(root, orders = newer))
+  expect_snapshot(
+    error = TRUE,
+    dr_set_sources(root, orders = newer, .recursive = TRUE)
+  )
 })
 
 test_that("invalid and overlapping source selectors fail before execution", {
   leaf <- dr_product("leaf", data.frame(id = 1L))
   branch <- dr_product("branch", leaf)
   root <- dr_product("root", branch)
-  expect_snapshot(error = TRUE, dr_replace_sources(root, missing = leaf))
   expect_snapshot(
     error = TRUE,
-    dr_replace_sources(root, leaf = leaf, leaf = leaf)
+    dr_set_sources(root, missing = leaf, .recursive = TRUE)
   )
-  expect_snapshot(error = TRUE, dr_replace_sources(root, leaf))
   expect_snapshot(
     error = TRUE,
-    dr_replace_sources(
+    dr_set_sources(root, leaf = leaf, leaf = leaf, .recursive = TRUE)
+  )
+  expect_snapshot(error = TRUE, dr_set_sources(root, leaf, .recursive = TRUE))
+  expect_snapshot(
+    error = TRUE,
+    dr_set_sources(
       root,
       branch = dr_product("branch", data.frame(id = 1L)),
-      leaf = leaf
+      leaf = leaf,
+      .recursive = TRUE
     )
   )
   ambiguous <- root |> dr_add_source(data.frame(id = 1L), name = "leaf")
-  expect_snapshot(error = TRUE, dr_replace_sources(ambiguous, leaf = leaf))
+  expect_snapshot(
+    error = TRUE,
+    dr_set_sources(ambiguous, leaf = leaf, .recursive = TRUE)
+  )
   cyclic <- branch
   cyclic$sources <- list(root = root)
-  expect_snapshot(error = TRUE, dr_replace_sources(root, branch = cyclic))
+  expect_snapshot(
+    error = TRUE,
+    dr_set_sources(root, branch = cyclic, .recursive = TRUE)
+  )
   conflict <- dr_product("root") |>
     dr_add_source(branch) |>
     dr_add_source(dr_product("leaf", data.frame(id = 2L)), name = "other")
-  expect_snapshot(error = TRUE, dr_replace_sources(conflict, branch = branch))
+  expect_snapshot(
+    error = TRUE,
+    dr_set_sources(conflict, branch = branch, .recursive = TRUE)
+  )
 })
 
 test_that("managed dbt bindings change without reading a database or writing files", {
@@ -82,7 +98,7 @@ test_that("managed dbt bindings change without reading a database or writing fil
     lake = config,
     sources = list(orders = result, customers = result)
   )
-  changed <- dr_replace_sources(project, orders = corrected)
+  changed <- dr_set_sources(project, orders = corrected, .recursive = TRUE)
   expect_equal(changed$source_groups$inputs$orders$release_id, "release-2")
   expect_identical(
     changed$source_groups$inputs$customers,
@@ -90,20 +106,28 @@ test_that("managed dbt bindings change without reading a database or writing fil
   )
   expect_equal(list.files(root), character())
   project <- dr_dbt_sources(project, list(orders = result), name = "historical")
-  expect_snapshot(error = TRUE, dr_replace_sources(project, orders = corrected))
-  changed <- dr_replace_sources(project, inputs.orders = corrected)
+  expect_snapshot(
+    error = TRUE,
+    dr_set_sources(project, orders = corrected, .recursive = TRUE)
+  )
+  changed <- dr_set_sources(
+    project,
+    inputs.orders = corrected,
+    .recursive = TRUE
+  )
   expect_equal(changed$source_groups$historical$orders$release_id, "release-1")
   expect_snapshot(
     error = TRUE,
-    dr_replace_sources(
+    dr_set_sources(
       project,
       inputs.orders = corrected,
-      historical.orders = NULL
+      historical.orders = NULL,
+      .recursive = TRUE
     )
   )
   expect_snapshot(
     error = TRUE,
-    dr_replace_sources(changed, unknown = corrected)
+    dr_set_sources(changed, unknown = corrected, .recursive = TRUE)
   )
 })
 
@@ -123,7 +147,7 @@ test_that("corrected definitions reuse existing targets caching", {
           amount,
           "))"
         ),
-        "total_definition <- dr_replace_sources(total_definition, orders = fresh_definition)",
+        "total_definition <- dr_set_sources(total_definition, orders = fresh_definition, .recursive = TRUE)",
         "unrelated_definition <- dr_product('unrelated', data.frame(id = 1L))",
         "dataraft.adapters::dr_as_targets(list(total_definition, unrelated_definition), evidence = 'evidence')"
       ),
@@ -146,9 +170,17 @@ test_that("correcting a product input retains its transformations and quality ga
     dplyr::mutate(amount = amount * 2) |>
     dr_add_quality(~ amount > 0)
   totals <- dr_product("totals", orders)
-  corrected <- dr_replace_sources(totals, orders = data.frame(amount = 3))
+  corrected <- dr_set_sources(
+    totals,
+    orders = data.frame(amount = 3),
+    .recursive = TRUE
+  )
   expect_equal(dr_collect(dr_run(corrected))$amount, 6)
-  failed <- dr_replace_sources(totals, orders = data.frame(amount = -3))
+  failed <- dr_set_sources(
+    totals,
+    orders = data.frame(amount = -3),
+    .recursive = TRUE
+  )
   upstream <- dr_run(failed$sources$orders, stop_on_failure = FALSE)
   expect_equal(upstream$status, "blocked")
   expect_equal(dr_run(failed, stop_on_failure = FALSE)$status, "error")
@@ -157,9 +189,10 @@ test_that("correcting a product input retains its transformations and quality ga
     dr_add_source(data.frame(id = 1L), name = "other")
   expect_snapshot(
     error = TRUE,
-    dr_replace_sources(
+    dr_set_sources(
       dr_product("root", multiple),
-      multiple = data.frame(id = 2L)
+      multiple = data.frame(id = 2L),
+      .recursive = TRUE
     )
   )
 })
@@ -183,7 +216,7 @@ test_that("corrections retain exact immutable references in unselected slots", {
   definition <- dr_product("report") |>
     dr_add_source(old, name = "current") |>
     dr_add_source(old, name = "historical")
-  corrected <- dr_replace_sources(definition, current = fresh)
+  corrected <- dr_set_sources(definition, current = fresh, .recursive = TRUE)
   expect_identical(corrected$sources$historical, definition$sources$historical)
   expect_equal(corrected$sources$current$release_id, "release-2")
   expect_equal(list.files(root), character())

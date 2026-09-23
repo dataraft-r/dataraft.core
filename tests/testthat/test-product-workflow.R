@@ -27,25 +27,6 @@ test_that("preparation is stored on the product and shares its execution path", 
   expect_length(spec$transforms, 0L)
 })
 
-test_that("the legacy modular spelling builds a product without nested workflow state", {
-  reads <- 0L
-  old <- dr_workflow() |>
-    dr_add_recipe(dr_recipe() |> dr_step_mutate(amount = amount * 2)) |>
-    dr_add_source(function() {
-      reads <<- reads + 1L
-      data.frame(amount = 10)
-    }) |>
-    dr_add_product(dr_product("orders"))
-  expect_identical(class(old), "dr_product")
-  expect_null(old$product)
-  validated <- dr_validate(old)
-  expect_identical(attr(validated, "dr_validated"), TRUE)
-  attr(validated, "dr_validated") <- NULL
-  expect_identical(validated, old)
-  expect_identical(reads, 0L)
-  expect_equal(dr_collect(dr_run(old))$amount, 20)
-  expect_identical(reads, 1L)
-})
 
 test_that("direct products preserve dry-run gates and lazy recipe execution", {
   writes <- 0L

@@ -12,7 +12,7 @@ A recipe specification.
 \description{
 A recipe contains ordered transformations, independently of product identity,
 primary inputs, output contracts and destinations. Construction never reads
-data. Attach it with \code{\link[=dr_add_recipe]{dr_add_recipe()}} to a product or \code{\link[=dr_workflow]{dr_workflow()}}. Recipes are
+data. Attach it with \code{\link[=dr_add_recipe]{dr_add_recipe()}} to a product. Recipes are
 ordinary R values: adding a step returns a new value and leaves the original
 unchanged. Expressions use dplyr data masking and retain their environments.
 }

@@ -6,9 +6,9 @@ test_that("generated Unicode numeric columns preserve null and threshold counts"
     data <- setNames(data.frame(values), "Betrag_€")
     contract <- dr_contract(
       columns = c("Betrag_€" = "numeric"),
-      allow_empty = TRUE,
       rules = list(~ `Betrag_€` >= 0)
-    )
+    ) |>
+      dataraft.core::dr_contract_policy(allow_empty = TRUE)
     evidence <- dr_validate(data, contract)
     expect_equal(
       evidence$n_failed[evidence$rule == "not_null:Betrag_€"],

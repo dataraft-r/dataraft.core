@@ -55,7 +55,7 @@ need <- function(package, purpose = NULL) {
     if (identical(package, "duckdb")) {
       message <- c(
         message,
-        i = "For an in-memory workflow, use {.fn dr_trial} instead of lake publication."
+        i = "For an in-memory workflow, use {.code dr_run(x, write = FALSE)} before lake publication."
       )
     }
     cli::cli_abort(

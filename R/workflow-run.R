@@ -1,7 +1,4 @@
-#' Define a modular product workflow or a delivery dependency graph
-#'
-#' Empty modular workflows are deprecated: attach sources and recipes directly
-#' to [dr_product()]. The compatibility builder now returns an ordinary product.
+#' Define a delivery dependency graph
 #'
 #' Named functions describe the receipt, preparation and dbt steps once.
 #' Each function argument names an input or another step. Steps execute in
@@ -20,12 +17,9 @@
 #'   defaults and `...` in step functions are not supported.
 #' @param inputs Named list of initial input values.
 #' @param code_version Explicit version of workflow code and dependencies.
-#'   Required for function dependency graphs; optional for modular workflows.
-#' @param execution Optional connection-free [dr_execution_config()] for a modular
-#'   workflow. Function graphs configure execution inside their steps.
-#' @returns A workflow specification. Modular workflows return ordinary product
-#'   run results from [dr_run()], [dr_run()] or [dr_publish()]. Function dependency
-#'   graphs return named `results`, effective `inputs`, and a step `status` table.
+#'   Required for every dependency graph.
+#' @returns A workflow specification. Running it returns named `results`,
+#'   effective `inputs`, and a step `status` table.
 #' @export
 #' @examples
 #' flow <- dr_workflow(total = function(delivery) sum(delivery),
@@ -34,19 +28,10 @@
 dr_workflow <- function(
   ...,
   inputs = list(),
-  code_version = NULL,
-  execution = NULL
+  code_version = NULL
 ) {
   steps <- list(...)
-  if (!length(steps) && identical(inputs, list())) {
-    return(new_product_workflow(code_version, execution))
-  }
-  if (!is.null(execution)) {
-    abort(
-      subclass = "dataraft_error_definition",
-      "Configure execution inside the function workflow's steps."
-    )
-  }
+
   scalar(code_version, "code_version")
   check_names <- function(x) {
     rlang::local_error_call(rlang::caller_env())

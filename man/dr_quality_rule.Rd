@@ -9,8 +9,6 @@
 dr_quality_rule(
   name = NULL,
   check = NULL,
-  severity = lifecycle::deprecated(),
-  max_failure = lifecycle::deprecated(),
   description = "",
   engine = c("native", "pointblank"),
   action = NULL,
@@ -24,8 +22,6 @@ dr_quality_counts(n_failed, n_total)
 dr_pointblank_checks(
   name,
   build,
-  severity = lifecycle::deprecated(),
-  max_failure = lifecycle::deprecated(),
   policy = c("rule", "agent"),
   action = NULL,
   threshold = NULL,
@@ -43,15 +39,6 @@ one value per row. Formula results are evaluated per row, including scalar
 predicates repeated for each row. Missing logical values count as failures.
 Lazy formulas run on the backend; arbitrary functions remain responsible
 for their own collection.}
-
-\item{severity}{Compatibility argument: \code{"error"} corresponds to
-\code{action = "block"}, \code{"warning"} to \code{action = "warn"}. Prefer \code{action}
-for new \code{dr_quality_rule()} definitions. Supplying both is an error.
-Deprecated since 0.1.0.9005; use \code{action} for every engine.}
-
-\item{max_failure}{Compatibility argument for \code{threshold}. Prefer \code{threshold}
-for new \code{dr_quality_rule()} definitions. Supplying both is an error.
-Deprecated since 0.1.0.9005. Both names denote a fraction, never a row count.}
 
 \item{description}{Rule description.}
 

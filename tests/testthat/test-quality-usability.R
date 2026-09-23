@@ -147,7 +147,7 @@ test_that("wrong quality outputs and empty evidence never pass", {
   expect_error(dr_quality_counts(0.5, 1), "Invalid quality counts")
   expect_error(dr_quality_counts("0", "1"), "Invalid quality counts")
   expect_error(dr_quality_counts(2, 1), "Invalid quality counts")
-  expect_error(dr_quality_rule("bad", ~TRUE, max_failure = "0"), "between")
+  expect_error(dr_quality_rule("bad", ~TRUE, threshold = "0"), "between")
   empty <- dr_run_quality(
     dr_quality_rule("empty", function(x) logical()),
     data[0, , drop = FALSE]

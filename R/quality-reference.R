@@ -16,7 +16,7 @@
 #' @param by Character vector of key columns, or a named vector mapping input
 #'   columns to reference columns, for example `c(customer_id = "id")`.
 #' @param name Name of the quality check.
-#' @param action,threshold,severity,max_failure See [dr_quality_rule()].
+#' @param action,threshold See [dr_quality_rule()].
 #' @param copy Explicitly permit moving reference keys between backends.
 #' @param na_matches Whether missing values never match (`"never"`, default)
 #'   or match other missing values (`"na"`).
@@ -31,8 +31,6 @@ dr_quality_reference <- function(
   reference,
   by,
   name = "reference",
-  severity = lifecycle::deprecated(),
-  max_failure = lifecycle::deprecated(),
   copy = FALSE,
   na_matches = c("never", "na"),
   action = NULL,
@@ -58,32 +56,7 @@ dr_quality_reference <- function(
       "by must map unique input columns to unique reference columns."
     )
   }
-  if (lifecycle::is_present(severity)) {
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_quality_reference(severity)",
-      "dr_quality_reference(action)"
-    )
-    if (!is.null(action)) {
-      abort("Use action or severity, not both.")
-    }
-    action <- if (match.arg(severity, c("error", "warning")) == "warning") {
-      "warn"
-    } else {
-      "block"
-    }
-  }
-  if (lifecycle::is_present(max_failure)) {
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_quality_reference(max_failure)",
-      "dr_quality_reference(threshold)"
-    )
-    if (!is.null(threshold)) {
-      abort("Use threshold or max_failure, not both.")
-    }
-    threshold <- max_failure
-  }
+
   flag(copy, "copy")
   na_matches <- match.arg(na_matches)
   if (!is.data.frame(reference) && !is_lazy_table(reference)) {

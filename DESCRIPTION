@@ -1,6 +1,6 @@
 Package: dataraft.core
 Title: Core Components for DataRaft
-Version: 0.1.0.9005
+Version: 0.1.0.9006
 Authors@R: person("Jan-Hendrik", "Weinert", role = c("aut", "cre"), email = "65009403+JanWein@users.noreply.github.com")
 Description: Prepare repeated data deliveries, check their columns and quality
     rules, and inspect failures before writing any output. Reusable products,
@@ -9,11 +9,11 @@ Description: Prepare repeated data deliveries, check their columns and quality
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.2.0)
-Imports: lifecycle, codetools, dm, DBI, cli, dbplyr, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble, withr
-Suggests: hedgehog, knitr, rmarkdown, dataraft.adapters (>= 0.1.0.9005), dataraft.dbt (>= 0.1.0.9000), dataraft.lake (>= 0.1.0.9000), dataraft.metrics (>= 0.1.0.9000), duckdb (>= 1.5.5), pointblank, readxl, testthat (>= 3.2.0), RSQLite, arrow, bit64, targets
+Imports: codetools, dm, DBI, cli, dbplyr, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble, withr
+Suggests: hedgehog, knitr, rmarkdown, dataraft.adapters (>= 0.1.0.9006), dataraft.dbt (>= 0.1.0.9006), dataraft.lake (>= 0.1.0.9006), dataraft.metrics (>= 0.1.0.9006), duckdb (>= 1.5.5), pointblank, readxl, testthat (>= 3.2.0), RSQLite, arrow, bit64, targets
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-Remotes: dataraft-r/dataraft.adapters@fix/deep-review-2, dataraft-r/dataraft.dbt@fix/deep-review-2, dataraft-r/dataraft.lake@fix/deep-review-2, dataraft-r/dataraft.metrics@fix/deep-review-2
+Remotes: dataraft-r/dataraft.adapters@main, dataraft-r/dataraft.dbt@main, dataraft-r/dataraft.lake@main, dataraft-r/dataraft.metrics@main
 URL: https://github.com/dataraft-r/dataraft.core
 BugReports: https://github.com/dataraft-r/dataraft.core/issues
 VignetteBuilder: knitr

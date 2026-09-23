@@ -7,7 +7,7 @@
 dr_set_target(x, target)
 }
 \arguments{
-\item{x}{A \code{\link[=dr_product]{dr_product()}} or modular \code{\link[=dr_workflow]{dr_workflow()}} definition.}
+\item{x}{A \code{\link[=dr_product]{dr_product()}} definition.}
 
 \item{target}{Lake folder path, connected lake, configuration or target
 adapter. Use \code{\link[dataraft.lake:dr_target_lake]{dataraft.lake::dr_target_lake()}} for partition or layer options.}
@@ -16,13 +16,12 @@ adapter. Use \code{\link[dataraft.lake:dr_target_lake]{dataraft.lake::dr_target_
 An updated definition.
 }
 \description{
-Store or replace a destination without writing data. \code{\link[=dr_run]{dr_run()}} disables
+Store or replace a destination without writing data. \code{dr_run(write = FALSE)} disables
 it; \code{\link[=dr_run]{dr_run()}} and \code{\link[=dr_publish]{dr_publish()}} execute it after successful output checks.
 }
 \examples{
 \dontshow{if (requireNamespace("dataraft.lake", quietly = TRUE)) withAutoprint(\{ # examplesIf}
-dr_workflow() |>
-  dr_add_product(dr_product("orders")) |>
+dr_product("orders") |>
   dr_set_target("data/orders")
 \dontshow{\}) # examplesIf}
 }

@@ -84,7 +84,7 @@ test_that("definitions explain how to obtain data without executing sources", {
     "dr_run",
     class = "dataraft_error_definition"
   )
-  expect_error(dr_collect(dr_workflow() |> dr_add_product(product)), "dr_run")
+  expect_error(dr_collect(product), "dr_run")
   expect_identical(calls, 0L)
 })
 

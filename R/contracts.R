@@ -8,8 +8,6 @@
 #' @param key Unique, non-null key columns.
 #' @param rules Quality rules or named row predicates.
 #' @param version Immutable definition version.
-#' @param ... Deprecated legacy policy/metadata arguments. Use the composition
-#'   functions instead; this compatibility path is removed on 2027-01-01.
 #' @returns A serializable contract specification.
 #' @export
 #' @examples
@@ -21,34 +19,20 @@ dr_contract <- function(
   columns,
   key = character(),
   rules = list(),
-  version = "1.0.0",
-  ...
+  version = "1.0.0"
 ) {
   anonymous <- missing(id)
-  legacy <- list(...)
-  if (length(legacy)) {
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_contract(...)",
-      details = "Use dr_contract_meta() and dr_contract_policy() for metadata and policy."
-    )
-  }
-  out <- do.call(
-    new_contract,
-    c(
-      list(
-        id = id,
-        columns = columns,
-        key = key,
-        rules = rules,
-        version = version
-      ),
-      legacy
-    )
+  out <- new_contract(
+    id = id,
+    columns = columns,
+    key = key,
+    rules = rules,
+    version = version
   )
   attr(out, "dr_anonymous") <- if (anonymous) TRUE else NULL
   out
 }
+
 
 new_contract <- function(
   id = "contract",
@@ -234,13 +218,6 @@ new_contract <- function(
 #' @param volatile Explicitly allow time-dependent or random checks. Such checks
 #'   are labelled volatile, cannot authorize attestations and cannot use release caching.
 #' @param dimension Optional ODCS quality dimension.
-#' @param severity Compatibility argument: `"error"` corresponds to
-#'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
-#'   for new `dr_quality_rule()` definitions. Supplying both is an error.
-#'   Deprecated since 0.1.0.9005; use `action` for every engine.
-#' @param max_failure Compatibility argument for `threshold`. Prefer `threshold`
-#'   for new `dr_quality_rule()` definitions. Supplying both is an error.
-#'   Deprecated since 0.1.0.9005. Both names denote a fraction, never a row count.
 #' @param description Rule description.
 #' @param engine Formula evaluation engine: `"native"` (default) or optional
 #'   `"pointblank"`. Both require logical row predicates and count missing
@@ -266,8 +243,6 @@ new_contract <- function(
 dr_quality_rule <- function(
   name = NULL,
   check = NULL,
-  severity = lifecycle::deprecated(),
-  max_failure = lifecycle::deprecated(),
   description = "",
   engine = c("native", "pointblank"),
   action = NULL,
@@ -276,32 +251,7 @@ dr_quality_rule <- function(
   volatile = FALSE
 ) {
   flag(volatile, "volatile")
-  if (lifecycle::is_present(severity)) {
-    if (!is.null(action)) {
-      abort("Use action or severity, not both.")
-    }
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_quality_rule(severity)",
-      "dr_quality_rule(action)"
-    )
-    action <- if (match.arg(severity, c("error", "warning")) == "warning") {
-      "warn"
-    } else {
-      "block"
-    }
-  }
-  if (lifecycle::is_present(max_failure)) {
-    if (!is.null(threshold)) {
-      abort("Use threshold or max_failure, not both.")
-    }
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_quality_rule(max_failure)",
-      "dr_quality_rule(threshold)"
-    )
-    threshold <- max_failure
-  }
+
   action <- match.arg(action %||% "block", c("block", "warn", "quarantine"))
   threshold <- threshold %||% 0
   if (!is.null(dimension)) {
@@ -401,8 +351,6 @@ dr_quality_counts <- function(n_failed, n_total) {
 dr_pointblank_checks <- function(
   name,
   build,
-  severity = lifecycle::deprecated(),
-  max_failure = lifecycle::deprecated(),
   policy = c("rule", "agent"),
   action = NULL,
   threshold = NULL,
@@ -415,34 +363,7 @@ dr_pointblank_checks <- function(
     threshold = threshold,
     volatile = volatile
   )
-  if (lifecycle::is_present(severity)) {
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_pointblank_checks(severity)",
-      "dr_pointblank_checks(action)"
-    )
-    if (!is.null(action)) {
-      abort("Use action or severity, not both.")
-    }
-    args$action <- if (
-      match.arg(severity, c("error", "warning")) == "warning"
-    ) {
-      "warn"
-    } else {
-      "block"
-    }
-  }
-  if (lifecycle::is_present(max_failure)) {
-    lifecycle::deprecate_soft(
-      "0.1.0.9005",
-      "dr_pointblank_checks(max_failure)",
-      "dr_pointblank_checks(threshold)"
-    )
-    if (!is.null(threshold)) {
-      abort("Use threshold or max_failure, not both.")
-    }
-    args$threshold <- max_failure
-  }
+
   if (identical(args$action, "quarantine")) {
     abort(
       "Pointblank agents support block or warn; quarantine requires a native row formula."

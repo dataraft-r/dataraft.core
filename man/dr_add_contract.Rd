@@ -18,7 +18,7 @@ dr_add_quality(
 )
 }
 \arguments{
-\item{x}{A \code{\link[=dr_product]{dr_product()}} specification or modular \code{\link[=dr_workflow]{dr_workflow()}}.}
+\item{x}{A \code{\link[=dr_product]{dr_product()}} specification.}
 
 \item{contract}{Contract, named type vector, or named list of prototypes.}
 

@@ -9,8 +9,7 @@ dr_contract(
   columns,
   key = character(),
   rules = list(),
-  version = "1.0.0",
-  ...
+  version = "1.0.0"
 )
 }
 \arguments{
@@ -23,9 +22,6 @@ dr_contract(
 \item{rules}{Quality rules or named row predicates.}
 
 \item{version}{Immutable definition version.}
-
-\item{...}{Deprecated legacy policy/metadata arguments. Use the composition
-functions instead; this compatibility path is removed on 2027-01-01.}
 }
 \value{
 A serializable contract specification.

@@ -160,10 +160,10 @@ test_that("empty inputs preserve their grain and optional missing references", {
   definition <- dr_product("empty") |>
     dr_add_source(input) |>
     dr_add_lookup(data.frame(id = 1L, label = "a"), by = "id") |>
-    dr_add_contract(dr_contract(
-      columns = c(id = "integer", label = "character"),
-      allow_empty = TRUE
-    ))
+    dr_add_contract(
+      dr_contract(columns = c(id = "integer", label = "character")) |>
+        dataraft.core::dr_contract_policy(allow_empty = TRUE)
+    )
   result <- dr_run(definition)
   expect_equal(nrow(dr_collect(result)), 0L)
   retained <- dr_product("orders") |>

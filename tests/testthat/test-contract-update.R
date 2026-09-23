@@ -1,12 +1,11 @@
 test_that("contract composition preserves identity choices and optional columns", {
-  old <- dr_contract(
-    "orders",
-    columns = c(id = "integer"),
-    key = "id",
-    owner = "Finance",
-    operator = "Platform",
-    column_metadata = list(id = list(description = "Order identifier"))
-  )
+  old <- dr_contract("orders", columns = c(id = "integer"), key = "id") |>
+    dataraft.core::dr_contract_meta(
+      owner = "Finance",
+      operator = "Platform",
+      column_metadata = list(id = list(description = "Order identifier")),
+      producer = "Finance"
+    )
   original <- old
   new <- dr_contract_update(
     old,

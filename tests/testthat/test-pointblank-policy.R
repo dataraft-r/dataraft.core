@@ -8,9 +8,6 @@ test_that("native thresholds are evaluated independently for each pointblank seg
   contract <- dr_contract(
     "amounts",
     version = "1",
-    owner = "Analytics",
-    description = "Amounts",
-    grain = "One amount",
     columns = c(entity = "character", amount = "numeric"),
     rules = list(
       dr_pointblank_checks(
@@ -29,7 +26,13 @@ test_that("native thresholds are evaluated independently for each pointblank seg
         policy = "agent"
       )
     )
-  )
+  ) |>
+    dataraft.core::dr_contract_meta(
+      owner = "Analytics",
+      description = "Amounts",
+      grain = "One amount",
+      producer = "Analytics"
+    )
   quality <- dr_validate(data, contract, keep_agents = TRUE)
   checks <- quality[quality$engine == "pointblank", ]
   expect_equal(checks$status, c("warning", "passed"))
@@ -72,12 +75,15 @@ test_that("native policy fails closed for inactive, errored and unconfigured che
     contract <- dr_contract(
       "x",
       version = "1",
-      owner = "Analytics",
-      description = "Values",
-      grain = "One value",
       columns = c(x = "numeric"),
       rules = list(dr_pointblank_checks("check", build, policy = "agent"))
-    )
+    ) |>
+      dataraft.core::dr_contract_meta(
+        owner = "Analytics",
+        description = "Values",
+        grain = "One value",
+        producer = "Analytics"
+      )
     quality <- dr_validate(data.frame(x = 1), contract)
     expect_equal(dataraft.core:::quality_ok(quality), FALSE)
     expect_equal(any(quality$status %in% c("error", "not_checked")), TRUE)
@@ -89,9 +95,6 @@ test_that("rule policy remains independent of native action levels", {
   contract <- dr_contract(
     "x",
     version = "1",
-    owner = "Analytics",
-    description = "Values",
-    grain = "One value",
     columns = c(x = "numeric"),
     rules = list(dr_pointblank_checks(
       "check",
@@ -102,9 +105,15 @@ test_that("rule policy remains independent of native action levels", {
         ) |>
           pointblank::col_vals_gte("x", 0)
       },
-      severity = "warning"
+      action = "warn"
     ))
-  )
+  ) |>
+    dataraft.core::dr_contract_meta(
+      owner = "Analytics",
+      description = "Values",
+      grain = "One value",
+      producer = "Analytics"
+    )
   quality <- dr_validate(data.frame(x = c(-1, 1)), contract)
   expect_equal(quality$status[quality$engine == "pointblank"], "warning")
   expect_equal(dataraft.core:::quality_ok(quality), TRUE)
@@ -128,9 +137,6 @@ test_that("every native blocking action takes precedence across report layouts",
   contract <- dr_contract(
     "amounts",
     version = "1",
-    owner = "Analytics",
-    description = "Amounts",
-    grain = "One amount",
     columns = c(amount = "numeric"),
     rules = list(dr_pointblank_checks(
       "positive",
@@ -143,7 +149,13 @@ test_that("every native blocking action takes precedence across report layouts",
       },
       policy = "agent"
     ))
-  )
+  ) |>
+    dataraft.core::dr_contract_meta(
+      owner = "Analytics",
+      description = "Amounts",
+      grain = "One amount",
+      producer = "Analytics"
+    )
   layouts <- list(
     list(W = FALSE, S = TRUE, E = FALSE, C = NA),
     list(W = TRUE, S = TRUE, E = NA, C = FALSE),

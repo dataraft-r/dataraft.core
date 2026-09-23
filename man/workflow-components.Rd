@@ -3,15 +3,12 @@
 \name{workflow-components}
 \alias{workflow-components}
 \alias{dr_add_recipe}
-\alias{dr_add_product}
 \alias{dr_update_recipe}
 \alias{dr_remove_recipe}
 \alias{dr_extract_recipe}
 \title{Attach reusable preparation to a product}
 \usage{
 dr_add_recipe(x, recipe)
-
-dr_add_product(x, product)
 
 dr_update_recipe(x, recipe)
 
@@ -23,8 +20,6 @@ dr_extract_recipe(x)
 \item{x}{A product definition.}
 
 \item{recipe}{A recipe from \code{\link[=dr_recipe]{dr_recipe()}}.}
-
-\item{product}{A replacement product definition for the deprecated builder.}
 }
 \value{
 An updated product definition.
@@ -34,12 +29,6 @@ Products own their sources, preparation, checks and destination. There is no
 separate modular workflow object or execution method. Recipes remain reusable
 definitions and never execute when attached.
 }
-\section{Lifecycle}{
-
-The old \code{dr_add_product()} builder is soft-deprecated until 2027-01-01.
-Begin directly with \code{\link[=dr_product]{dr_product()}} instead.
-}
-
 \examples{
 preparation <- dr_recipe() |> dr_step_mutate(amount = round(amount, 2))
 dr_product("orders", data.frame(amount = 10.123)) |>

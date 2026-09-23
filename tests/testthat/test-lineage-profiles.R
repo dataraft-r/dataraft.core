@@ -24,14 +24,16 @@ test_that("catalog delivery retains safe lineage and governance across evidence 
   received <- NULL
   contract <- dr_contract(
     "orders",
-    columns = c(amount = "numeric", net = "numeric"),
-    governance = list(
-      retention = "P7Y",
-      tags = c("Finance.Reporting"),
-      odcs = list(servers = list(password = "never-export"))
-    ),
-    column_metadata = list(amount = list(classification = "PII.Sensitive"))
-  )
+    columns = c(amount = "numeric", net = "numeric")
+  ) |>
+    dataraft.core::dr_contract_meta(
+      governance = list(
+        retention = "P7Y",
+        tags = c("Finance.Reporting"),
+        odcs = list(servers = list(password = "never-export"))
+      ),
+      column_metadata = list(amount = list(classification = "PII.Sensitive"))
+    )
   product <- dr_product(
     "orders",
     data.frame(amount = 10),

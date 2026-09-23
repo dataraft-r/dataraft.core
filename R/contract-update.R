@@ -26,8 +26,6 @@
 #' @param ... Other named arguments of [dr_contract()] to replace in full, such as
 #'   `required`, `key`, `grain`, `rules`, `owner` or `column_metadata`.
 #' @returns A new `contract` specification. Use [dr_contract_diff()] to review it.
-#' This legacy name is retained for compatibility. Prefer [dr_contract_update()]
-#' in new code; argument positions and revision checks remain unchanged.
 #' @seealso [dr_contract()], [dr_contract_diff()]
 #' @export
 #' @examples
@@ -143,6 +141,7 @@ dr_contract_update <- function(
   args <- unclass(x)
   attr(args, "dr_anonymous") <- NULL
   args$kind <- NULL
+  args$rules <- contract_user_rules(x)
   args$id <- id
   args$version <- version
   types <- x$columns[setdiff(names(x$columns), remove)]

@@ -28,6 +28,7 @@ dr_contract_policy <- function(
     x$id,
     columns = unlist(x$columns),
     key = x$key,
+    rules = contract_user_rules(x),
     required = required,
     allow_empty = allow_empty,
     allow_extra = allow_extra,
@@ -39,7 +40,8 @@ dr_contract_policy <- function(
     "allow_empty",
     "allow_extra",
     "max_age_hours",
-    "constraints"
+    "constraints",
+    "rules"
   )
   x[fields] <- checked[fields]
   x
@@ -105,4 +107,19 @@ dr_model_product <- function(id, model, contracts = NULL, ...) {
     abort("Supply a dm model.", subclass = "dataraft_error_definition")
   }
   dr_product(id, data = model, contracts = contracts, ...)
+}
+
+contract_user_rules <- function(x) {
+  generated <- unlist(
+    lapply(names(x$constraints), function(column) {
+      paste(
+        "constraint",
+        column,
+        setdiff(names(x$constraints[[column]]), "nullable"),
+        sep = ":"
+      )
+    }),
+    use.names = FALSE
+  )
+  Filter(function(rule) !rule$name %in% generated, x$rules)
 }

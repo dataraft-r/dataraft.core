@@ -2,7 +2,7 @@
 #'
 #' Mirrors parsnip's separation of intent and implementation. Formula quality
 #' rules support `"native"` and `"pointblank"`; checked lookup specifications
-#' use dm (`"native"` is a compatibility alias). Engine selection never reads data or loads an
+#' use dm. Engine selection never reads data or loads an
 #' optional engine. Missing dependencies are reported at execution preflight.
 #' These engines implement individual operations, not the whole data platform.
 #' Storage is configured separately with [dr_set_target()] or `dr_publish(to = )`.
