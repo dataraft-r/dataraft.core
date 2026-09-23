@@ -1,8 +1,10 @@
 #' Describe a data product input or output port
 #'
 #' A port records a consumer-facing contract and delivery settings. An output
-#' binds to the existing target adapter; one primary output is supported per
-#' product execution. Multi-target atomic publication is not implied.
+#' binds to the existing target adapter. The first output is primary; further
+#' outputs use adapters implementing [dr_write_target()]. Publications run in
+#' order. They are not atomic across destinations; failures record which ports
+#' have already committed.
 #' @param id Stable port name.
 #' @param source Input source passed to [dr_add_source()].
 #' @param target Output target passed to [dr_set_target()].
@@ -55,6 +57,11 @@
 }
 
 #' Attach a declared output to a product
+#'
+#' The first output is the primary target. Later outputs publish the same
+#' checked delivery in order through `dr_write_target()`. Failure of a later
+#' output leaves earlier commits in place and records per-port status in
+#' `result$port_outputs`; repeat publication only after inspecting those commits.
 #' @param product DataRaft product.
 #' @param port Output port.
 #' @return Updated product.
@@ -64,15 +71,23 @@
   if (!inherits(port, "dr_port") || !identical(port$direction, "output")) {
     abort("Supply an output port.", subclass = "dataraft_error_definition")
   }
-  if (length(product$output_ports) || !is.null(product$target)) {
-    abort("Only one primary output can be published in a product execution.",
+  if (port$id %in% names(product$output_ports)) {
+    abort("Output port names must be unique.", subclass = "dataraft_error_definition")
+  }
+  if (length(product$output_ports) &&
+      !component_method("dr_write_target", port$endpoint)) {
+    abort("Additional outputs need an adapter with dr_write_target().",
+      subclass = "dataraft_error_definition")
+  }
+  if (!length(product$output_ports) && !is.null(product$target)) {
+    abort("The primary target is already configured. Define its output port first.",
       subclass = "dataraft_error_definition")
   }
   if (!is.null(port$contract) && !identical(port$contract, product$contract)) {
     abort("Output port contract must match the product contract.",
       subclass = "dataraft_error_contract")
   }
-  product <- dr_set_target(product, port$endpoint)
+  if (!length(product$output_ports)) product <- dr_set_target(product, port$endpoint)
   product$output_ports[[port$id]] <- port
   product
 }
