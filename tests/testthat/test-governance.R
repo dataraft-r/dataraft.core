@@ -30,6 +30,21 @@ test_that("SLA distinguishes missing and late deliveries", {
   expect_equal(dr_check_sla(sla, "2026-09-23", delivered_at = delivered, at = at)$status, "late")
 })
 
+test_that("an output SLA is evaluated on successful publication and retained as evidence", {
+  skip_if_not_installed("dataraft.adapters")
+  path <- withr::local_tempfile(fileext = ".rds")
+  evidence <- withr::local_tempdir()
+  product <- dr_product("sla.delivery", data.frame(id = 1L)) |>
+    dr_add_output(dr_output("table", dataraft.adapters::dr_target_rds(path),
+      sla = dr_sla(available_by = "08:00", timezone = "UTC")))
+  expect_error(dr_run(product), "business_date")
+  expect_false(file.exists(path))
+  result <- dr_run(product, business_date = "2026-09-23", evidence = evidence)
+  expect_equal(result$status, "published")
+  expect_equal(result$metadata$sla$table$status, "late")
+  expect_equal(dr_read_run(evidence, result$run_id)$sla$table$status, "late")
+})
+
 test_that("ports bind existing sources and exactly one target", {
   product <- dr_product("customers") |>
     dr_add_input(dr_input("feed", data.frame(id = 1L))) |>

@@ -26,7 +26,9 @@ For dbt builds it defaults to the project's configured lake.}
 as described in \code{\link[=dr_run]{dr_run()}}, \code{stop_on_failure} and, for lake
 targets, \code{business_date}, \code{notify}, \code{cache} and \code{previous}. Supply a previous
 publication to reject stale corrections if the destination has changed. dbt builds accept
-\code{\link[dataraft.dbt:dr_dbt_publish]{dataraft.dbt::dr_dbt_publish()}} options such as \code{contract}, \code{asset} and \code{layer}.}
+\code{\link[dataraft.dbt:dr_dbt_publish]{dataraft.dbt::dr_dbt_publish()}} options such as \code{contract}, \code{asset} and \code{layer}.
+When an output port has an SLA, supply \code{business_date}. Successful
+publication records the SLA evaluation in run metadata and durable evidence.}
 
 \item{layer}{Optional publication layer for a lake target.}
 

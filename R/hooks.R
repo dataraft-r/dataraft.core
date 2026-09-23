@@ -1,19 +1,20 @@
 #' Add a post-execution lifecycle hook
 #'
-#' Hooks receive sanitized run metadata after the target executor has finished.
+#' Published and failed hooks receive sanitized run metadata after execution.
+#' A deprecated hook runs after the persisted lake transition commits.
 #' A hook failure is recorded as a warning and cannot roll back a committed
 #' release. Callbacks may run again if the caller retries a publication; external
 #' receivers should deduplicate with the event's run ID.
 #' @param product DataRaft product.
-#' @param event `published` or `failed`.
+#' @param event `published`, `failed` or `deprecated`.
 #' @param callback Function receiving an event list.
 #' @return Updated product.
 #' @export
  dr_hook <- function(product, event, callback) {
   product <- editable_product(product)
   if (!is.character(event) || length(event) != 1L || is.na(event) ||
-      !event %in% c("published", "failed") || !is.function(callback)) {
-    abort("Supply a published or failed event and a callback function.",
+      !event %in% c("published", "failed", "deprecated") || !is.function(callback)) {
+    abort("Supply a published, failed or deprecated event and a callback function.",
       subclass = "dataraft_error_definition")
   }
   product$hooks[[event]] <- c(product$hooks[[event]], list(callback))
