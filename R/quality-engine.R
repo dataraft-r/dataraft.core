@@ -63,12 +63,24 @@ quality_formula_units <- function(data, predicate) {
 
 #' @export
 dr_run_quality.dr_rule <- function(rule, data, ...) {
-  if (identical(rule$action, "quarantine")) {
-    rule$severity <- "error"
-    rule$max_failure <- 0
-  }
+  assert_stable_rule(rule)
   if (identical(rule$engine, "pointblank")) {
-    return(pointblank_results(rule, data, ...))
+    out <- pointblank_results(rule, data, ...)
+    if (!isTRUE(rule$volatile) && !isTRUE(rule$dynamic_reference)) {
+      repeated <- pointblank_results(rule, data, ...)
+      if (!identical(lapply(out, identity), lapply(repeated, identity))) {
+        abort(
+          "Quality rule changed on repeated evaluation; declare volatile = TRUE.",
+          subclass = "dataraft_error_quality"
+        )
+      }
+    }
+    if (isTRUE(rule$volatile)) {
+      out$engine <- "pointblank:volatile"
+      out$message <- "Volatile rule: outcome is not reusable evidence or an approval."
+      out$status[out$status == "passed"] <- "warning"
+    }
+    return(out)
   }
   if (!identical(rule$engine, "r")) {
     abort(
@@ -78,6 +90,15 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
   }
   if (inherits(rule$check, "formula")) {
     units <- quality_formula_units(data, rule$check)
+    if (!isTRUE(rule$volatile)) {
+      repeated <- quality_formula_units(data, rule$check)
+      if (!identical(dr_collect(units), dr_collect(repeated))) {
+        abort(
+          "Quality rule changed on repeated evaluation; declare volatile = TRUE.",
+          subclass = "dataraft_error_quality"
+        )
+      }
+    }
     if (is_lazy_table(units)) {
       .dr_pass <- NULL
       counts <- dplyr::collect(dplyr::summarise(
@@ -95,6 +116,16 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
     }
   } else {
     value <- rule$check(data)
+    if (
+      !isTRUE(rule$volatile) &&
+        !isTRUE(rule$dynamic_reference) &&
+        !identical(value, rule$check(data))
+    ) {
+      abort(
+        "Quality rule changed on repeated evaluation; declare volatile = TRUE.",
+        subclass = "dataraft_error_quality"
+      )
+    }
     if (is.logical(value) && is.null(dim(value))) {
       if (length(value) != 1L && length(value) != count_rows(data)) {
         abort(
@@ -111,7 +142,7 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
       value$n_failed,
       value$n_total,
       rule$severity,
-      rule$max_failure
+      if (identical(rule$action, "quarantine")) 0 else rule$max_failure
     )
   } else {
     abort(
@@ -120,6 +151,11 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
     )
   }
   out$engine <- "r"
+  if (isTRUE(rule$volatile)) {
+    out$engine <- "r:volatile"
+    out$message <- "Volatile rule: outcome is not reusable evidence or an approval."
+    if (out$status == "passed") out$status <- "warning"
+  }
   out
 }
 
@@ -219,4 +255,82 @@ evaluate_rules <- function(
     attr(out, "dr_errors") <- errors
   }
   out
+}
+
+
+assert_stable_rule <- function(rule) {
+  if (isTRUE(rule$volatile)) {
+    return(invisible(NULL))
+  }
+  unstable <- c(
+    "runif",
+    "rnorm",
+    "sample",
+    "sample.int",
+    "Sys.time",
+    "Sys.Date",
+    "date",
+    "proc.time",
+    "RANDOM",
+    "random",
+    "uuid",
+    "UUIDgenerate"
+  )
+  inspect <- function(check, seen = list(), depth = 0L) {
+    if (depth > 16L || any(vapply(seen, identical, logical(1), y = check))) {
+      return(character())
+    }
+    expr <- if (inherits(check, "formula")) check[[2]] else body(check)
+    probe <- function() NULL
+    body(probe) <- expr
+    environment(probe) <- environment(check)
+    calls <- codetools::findGlobals(probe, merge = FALSE)$functions
+    qualified <- function(expr) {
+      if (missing(expr) || !is.call(expr)) {
+        return(character())
+      }
+      out <- if (
+        identical(expr[[1L]], as.name("::")) ||
+          identical(expr[[1L]], as.name(":::"))
+      ) {
+        as.character(expr[[3L]])
+      } else {
+        character()
+      }
+      unique(c(out, unlist(lapply(as.list(expr), qualified))))
+    }
+    calls <- union(calls, qualified(expr))
+    found <- intersect(calls, unstable)
+    env <- environment(check)
+    for (name in setdiff(unique(calls), c(unstable, "{", "(", "::", ":::"))) {
+      binding <- tryCatch(
+        get(name, envir = env, inherits = TRUE),
+        error = function(e) NULL
+      )
+      if (
+        is.function(binding) &&
+          !is.primitive(binding) &&
+          !isNamespace(environment(binding)) &&
+          !identical(environment(binding), baseenv())
+      ) {
+        found <- union(
+          found,
+          inspect(binding, c(seen, list(check)), depth + 1L)
+        )
+      }
+    }
+    found
+  }
+  found <- inspect(rule$check)
+  if (length(found)) {
+    abort(
+      paste0(
+        "Nondeterministic quality rule (",
+        paste(found, collapse = ", "),
+        "). Declare volatile = TRUE or use fixed inputs."
+      ),
+      subclass = "dataraft_error_quality"
+    )
+  }
+  invisible(NULL)
 }

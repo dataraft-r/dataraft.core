@@ -31,7 +31,7 @@ A deferred lookup transformation specification.
 }
 \description{
 Defines an enrichment independently of a product or recipe. Use \code{\link[=dr_set_engine]{dr_set_engine()}}
-to choose native or dm constraint checks, then attach it with
+to select dm constraint checks, then attach it with
 \code{\link[=dr_step_transform]{dr_step_transform()}}.
 }
 \examples{

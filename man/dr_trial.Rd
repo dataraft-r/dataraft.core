@@ -19,8 +19,9 @@ for \code{\link[=dr_quality_report]{dr_quality_report()}} and \code{\link[=dr_qu
 An in-memory run result accepted by \code{\link[=dr_collect]{dr_collect()}} and \code{\link[dataraft.metrics:dr_measure]{dataraft.metrics::dr_measure()}}.
 }
 \description{
-Executes the product's sources, transformations and checks, with targets,
-catalogs and durable run evidence disabled throughout its dependency graph.
+Compatibility shorthand for \code{dr_run(x, write = FALSE)}. Executes sources,
+transformations and checks through the same execution path. The write flag
+disables targets, catalogs and durable evidence throughout the dependency graph.
 The original definition is unchanged. Source and transformation callbacks are
 ordinary user code: their own side effects cannot be prevented by the framework.
 Read-only access to existing published inputs is still allowed.

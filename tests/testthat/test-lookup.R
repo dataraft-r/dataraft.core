@@ -139,7 +139,7 @@ test_that("lookup evidence belongs only to the step that checked the relationshi
     dr_run()
   expect_named(result$metadata$transformations, "lookup_1")
   evidence <- result$metadata$transformations$lookup_1
-  expect_identical(evidence$engine, "native")
+  expect_identical(evidence$engine, "dm")
   expect_identical(evidence$keys, c(id = "id"))
   expect_equal(c(evidence$input_rows, evidence$output_rows), c(3, 3))
   expect_identical(evidence$row_preserved, TRUE)
@@ -148,7 +148,8 @@ test_that("lookup evidence belongs only to the step that checked the relationshi
     list(
       parent_unique = "passed",
       parent_nonmissing = "passed",
-      input_keys = "passed"
+      input_keys = "passed",
+      dm = list(PK = TRUE, FK = TRUE)
     )
   )
   expect_null(attr(result$data, "dr_transform_metadata"))

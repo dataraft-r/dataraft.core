@@ -62,6 +62,13 @@ dr_quality_report <- function(
           title = title,
           generated_at = now(),
           publication_allowed = quality_ok(quality),
+          validation_status = if (any(quality$status == "unvalidated")) {
+            "unvalidated"
+          } else if (quality_ok(quality)) {
+            "passed"
+          } else {
+            "failed"
+          },
           checks = quality
         ),
         temp,
@@ -110,6 +117,8 @@ dr_quality_report <- function(
         "Not checked"
       } else if (!quality_ok(quality)) {
         "Blocked"
+      } else if (any(quality$status == "unvalidated")) {
+        "Unvalidated: no declared contract"
       } else if (any(quality$status == "warning")) {
         "Allowed with warnings"
       } else {
@@ -252,7 +261,9 @@ dr_pointblank_report <- function(x, rule, path, overwrite = FALSE) {
 dr_expect_quality <- function(x) {
   need("testthat")
   quality <- dr_quality(x)
-  blocked <- quality$rule[!quality$status %in% c("passed", "warning")]
+  blocked <- quality$rule[
+    !quality$status %in% c("passed", "warning", "unvalidated")
+  ]
   testthat::expect(
     quality_ok(quality),
     paste0(

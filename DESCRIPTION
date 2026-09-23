@@ -1,6 +1,6 @@
 Package: dataraft.core
 Title: Core Components for DataRaft
-Version: 0.1.0.9001
+Version: 0.1.0.9004
 Authors@R: person("Jan-Hendrik", "Weinert", role = c("aut", "cre"), email = "65009403+JanWein@users.noreply.github.com")
 Description: Prepare repeated data deliveries, check their columns and quality
     rules, and inspect failures before writing any output. Reusable products,
@@ -9,12 +9,12 @@ Description: Prepare repeated data deliveries, check their columns and quality
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.2.0)
-Imports: codetools, DBI, cli, dbplyr, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble, withr
-Suggests: hedgehog, knitr, rmarkdown, dataraft.adapters (>= 0.1.0.9000), dataraft.catalog (>= 0.1.0.9000), dataraft.dbt (>= 0.1.0.9000), dataraft.lake (>= 0.1.0.9000), dataraft.metrics (>= 0.1.0.9000), dm, duckdb (>= 1.5.5), pointblank, readxl, testthat (>= 3.2.0), RSQLite, arrow, bit64, targets
+Imports: codetools, dm, DBI, cli, dbplyr, digest, dplyr (>= 1.1.0), jsonlite, rlang, tibble, withr
+Suggests: hedgehog, knitr, rmarkdown, dataraft.adapters (>= 0.1.0.9004), dataraft.dbt (>= 0.1.0.9000), dataraft.lake (>= 0.1.0.9000), dataraft.metrics (>= 0.1.0.9000), duckdb (>= 1.5.5), pointblank, readxl, testthat (>= 3.2.0), RSQLite, arrow, bit64, targets
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
-Remotes: dataraft-r/dataraft.adapters@4b1ba10c2906979eeeb6db4fda14a8472aedc361, dataraft-r/dataraft.catalog@4ac44dca2ca3fd55e9d689c43aba5f512aa61f80, dataraft-r/dataraft.dbt@558ff796f017bbbfe3ece3f74ab808c01a9b2edc, dataraft-r/dataraft.lake@6759c2cb16592a344683c07c6ca2830c80dd79e8, dataraft-r/dataraft.metrics@7bf51928130a2531f18bf7aa5151d78bdab27753
+Remotes: dataraft-r/dataraft.adapters@fix/deep-review, dataraft-r/dataraft.dbt@fix/deep-review, dataraft-r/dataraft.lake@fix/deep-review, dataraft-r/dataraft.metrics@fix/deep-review
 URL: https://github.com/dataraft-r/dataraft.core
 BugReports: https://github.com/dataraft-r/dataraft.core/issues
 VignetteBuilder: knitr
+Config/roxygen2/version: 8.1.0

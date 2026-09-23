@@ -128,7 +128,10 @@ test_that("incompatible layers are rejected before source acquisition", {
     error = identity
   )
   expect_s3_class(condition, "error")
-  expect_match(conditionMessage(condition), "requires a lake target")
+  expect_match(
+    conditionMessage(condition),
+    "does not support layer configuration"
+  )
   condition <- tryCatch(
     dr_ingest(source, execution = dr_execution_config(layer = "staging")),
     error = identity

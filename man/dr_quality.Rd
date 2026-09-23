@@ -4,10 +4,20 @@
 \alias{dr_quality}
 \title{Retrieve quality evidence for a run or release}
 \usage{
-dr_quality(x, run_id = NULL, asset = NULL, release = NULL)
+dr_quality(
+  x,
+  run_id = NULL,
+  asset = NULL,
+  release = NULL,
+  ...,
+  action = "block",
+  threshold = 0,
+  engine = "native",
+  volatile = FALSE
+)
 }
 \arguments{
-\item{x}{A lake, run result, measurement, measurement set, dbt result or
+\item{x}{A one-sided formula to construct a quality rule, or a lake, run result, measurement, measurement set, dbt result or
 quality tibble.
 Measurement sets resolve their exact input releases using retained
 references. Unavailable references return explicit \code{not_checked} evidence.}
@@ -18,6 +28,11 @@ references. Unavailable references return explicit \code{not_checked} evidence.}
 attempt. Supply at most one of \code{run_id} and \code{asset}.}
 
 \item{release}{Exact release ID to inspect, together with \code{asset}.}
+
+\item{...}{For a rule, optional name, description and dimension.}
+
+\item{action, threshold, engine, volatile}{See \code{\link[=dr_quality_rule]{dr_quality_rule()}}.
+New definitions use only action and threshold as publication policy.}
 }
 \value{
 A quality tibble. \code{failure_rate} is derived from available counts.

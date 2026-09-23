@@ -28,7 +28,7 @@ should deduplicate by run/event identity. Successful recorded deliveries
 are not resent. Use one coordinated writer for this directory.
 }
 \examples{
-# catalog <- dataraft.catalog::dr_catalog_openlineage(
+# catalog <- dataraft.adapters::dr_catalog_openlineage(
 #   "https://lineage.example/api/v1/lineage")
 # dr_retry_catalogs("runs", list(catalog))
 }

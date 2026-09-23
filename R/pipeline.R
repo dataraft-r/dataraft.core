@@ -66,6 +66,9 @@ run_result <- function(run, status, release = NA_character_, quality = NULL) {
 #' @param lake Optional connected lake or lake configuration, overriding the
 #'   product's target for this run. Prefer [dr_set_target()] in reusable definitions.
 #' @param ... Execution options described above or provided by an adapter.
+#'   For products, `write = FALSE` evaluates sources and quality through the same
+#'   path while disabling target, catalog and evidence writes for all dependencies.
+#'   It does not verify destination permissions, capacity or publication conflicts.
 #' @returns For products, a run result containing status, timestamps, input and
 #'   output descriptors, quality, metadata and lifecycle. On failure an error
 #'   contains the same result in `condition$result`.

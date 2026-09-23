@@ -151,7 +151,6 @@ dr_model <- function(
   check = TRUE
 ) {
   need("dm")
-  need("dataraft.lake", "Models built from published lake releases")
   if (is.null(names(tables)) || anyDuplicated(names(tables))) {
     abort(
       subclass = "dataraft_error_definition",
@@ -165,7 +164,7 @@ dr_model <- function(
     )
   }
   refs <- lapply(names(tables), function(n) {
-    dataraft.lake::dr_internal_resolve_release(
+    dr_resolve_release(
       lake,
       tables[[n]],
       if (is.null(releases)) NULL else releases[[n]]
@@ -174,7 +173,7 @@ dr_model <- function(
   names(refs) <- names(tables)
   model <- dm::dm(
     !!!lapply(refs, function(r) {
-      dataraft.lake::dr_tbl(lake, r$asset[[1]], r$release_id[[1]])
+      dr_release_table(lake, r$asset[[1]], r$release_id[[1]])
     })
   )
   model <- dm_keys(model, primary_keys, foreign_keys, check)

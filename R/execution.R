@@ -69,7 +69,7 @@ dr_write_target.default <- function(target, data, context, ...) {
 #' and dbt stdout/stderr. Callback authors control what is transmitted; these
 #' diagnostics can contain SQL or database messages. Valid artifacts from
 #' failed dbt tests can still be delivered without changing the dbt outcome.
-#' [dataraft.catalog::dr_catalog_openmetadata_dbt()] delegates to the existing OpenMetadata ingestion
+#' [dataraft.adapters::dr_catalog_openmetadata_dbt()] delegates to the existing OpenMetadata ingestion
 #' engine and returns a retryable, credential-free delivery receipt.
 #' @param catalog Function or catalog adapter.
 #' @param metadata Descriptive product run metadata without input rows or
@@ -171,7 +171,7 @@ dr_publish.dr_product <- function(
     if (
       is.null(layer) &&
         !is.null(execution$layer) &&
-        !inherits(to, "dr_lake_target")
+        is.null(dr_inspect(x$target)$layer)
     ) {
       layer <- execution$layer
     }
@@ -181,13 +181,7 @@ dr_publish.dr_product <- function(
     layer <- layer %||% execution$layer
   }
   if (!is.null(layer)) {
-    if (!inherits(x$target, "dr_lake_target")) {
-      abort(
-        subclass = "dataraft_error_definition",
-        "layer is available only for lake publication targets."
-      )
-    }
-    x$target$layer <- ident(layer)
+    x$target <- dr_configure_target(x$target, layer = layer)
   }
   dr_run(x, execution = execution, ...)
 }
@@ -262,14 +256,14 @@ collect.dr_run_result <- function(x, ...) {
   }
   rlang::check_dots_empty()
   if (!is.null(x$output_lake) && DBI::dbIsValid(x$output_lake$con)) {
-    return(dataraft.lake::dr_read_release(x$output_lake, x$asset, x$release_id))
+    return(dr_read_release_data(x$output_lake, x$asset, x$release_id))
   }
   if (!is.null(x$output_config)) {
     config <- x$output_config
     config$read_only <- TRUE
-    lake <- dataraft.lake::dr_connect_lake(config)
-    on.exit(dataraft.lake::dr_close_lake(lake), add = TRUE)
-    return(dataraft.lake::dr_read_release(lake, x$asset, x$release_id))
+    lake <- dr_connect_backend(config)
+    on.exit(dr_close_backend(lake), add = TRUE)
+    return(dr_read_release_data(lake, x$asset, x$release_id))
   }
   abort(
     subclass = "dataraft_error_definition",
@@ -288,8 +282,16 @@ dr_run.dr_product <- function(
   execution = NULL,
   data = NULL,
   sources = NULL,
+  write = TRUE,
   ...
 ) {
+  flag(write, "write")
+  if (!is.null(.context)) {
+    write <- .context$write
+  }
+  if (!write) {
+    evidence <- NULL
+  }
   object <- replace_execution_sources(pipeline, data, sources)
   execution <- if (is.null(.context)) {
     product_execution(object, execution)
@@ -304,8 +306,8 @@ dr_run.dr_product <- function(
     object <- dr_set_target(object, lake)
   }
   object <- apply_execution_defaults(object, execution)
-  object <- dr_validate(object)
-  context <- .context %||% new_product_context(evidence)
+  object <- dr_validate(object, .write = write)
+  context <- .context %||% new_product_context(evidence, write)
   if (exists(object$id, context$results, inherits = FALSE)) {
     return(get(object$id, context$results, inherits = FALSE))
   }
@@ -314,7 +316,7 @@ dr_run.dr_product <- function(
   warnings <- list()
   result <- tryCatch(
     withCallingHandlers(
-      dr_execute_target(object$target, object, ...),
+      dr_execute_target(if (write) object$target else NULL, object, ...),
       warning = function(w) {
         warnings[[length(warnings) + 1L]] <<- w
         invokeRestart("muffleWarning")
@@ -349,6 +351,13 @@ dr_run.dr_product <- function(
       "The target executor must return a dr_run_result with a run ID and supported status."
     )
   }
+  result$validation_status <- if (any(result$quality$status == "unvalidated")) {
+    "unvalidated"
+  } else if (quality_ok(result$quality)) {
+    if (any(result$quality$status == "warning")) "warning" else "passed"
+  } else {
+    "failed"
+  }
   result$asset <- object$id
   result$started_at <- result$started_at %||% started
   result$finished_at <- result$finished_at %||% now()
@@ -376,6 +385,7 @@ dr_run.dr_product <- function(
       finished_at = result$finished_at,
       status = result$status,
       backend = result$backend,
+      validation_status = result$validation_status,
       quality = canonical(result$quality),
       inputs = result$inputs,
       outputs = result$outputs
@@ -391,7 +401,7 @@ dr_run.dr_product <- function(
       result$finished_at
     )
   )
-  result <- finalize_product_run(result, object, evidence)
+  result <- finalize_product_run(result, object, evidence, write = write)
   assign(object$id, result, context$results)
   if (length(result$warnings)) {
     rlang::warn(
@@ -458,6 +468,10 @@ dr_execute_target.default <- function(target, product, ...) {
         attr(data, "dr_transform_metadata") <- NULL
       }
       data <- table_result(data, "The final transformation")
+      # Freeze one delivery before checking it and handing it to a writer.
+      if (is_lazy_table(data)) {
+        data <- dr_collect(data)
+      }
       contract <- product_contract(product, data)
       partition <- prepare_quality_candidate(data, contract)
       data <- partition$data
@@ -480,6 +494,12 @@ dr_execute_target.default <- function(target, product, ...) {
             to = product$id
           )
         )
+        if (identical(dr_capabilities(target)$write, FALSE)) {
+          abort(
+            "This target declares write = FALSE.",
+            subclass = "dataraft_error_definition"
+          )
+        }
         output <- dr_write_target(
           target,
           data,
@@ -640,12 +660,13 @@ combine_quality <- function(contract, rules) {
 }
 
 
-new_product_context <- function(evidence = NULL) {
+new_product_context <- function(evidence = NULL, write = TRUE) {
   rlang::local_error_call(rlang::caller_env())
   context <- new.env(parent = emptyenv())
   context$results <- new.env(parent = emptyenv())
   context$sources <- list()
   context$evidence <- evidence
+  context$write <- write
   context
 }
 
@@ -718,7 +739,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
       } else {
         archive <- NULL
         if (!is.null(lake) && inherits(source, "dr_source")) {
-          landed <- dataraft.lake::dr_internal_land_source(lake, source)
+          landed <- dr_land_source(lake, source)
           archive <- list(
             source = source$id,
             source_version = source$version,
@@ -757,7 +778,7 @@ read_product_sources <- function(product, lake = NULL, on_input = NULL) {
           )
         } else {
           data <- if (identical(class(source), "dr_release_source")) {
-            dataraft.lake::dr_internal_read_release_source(
+            dr_read_release_source(
               source,
               lake %||% context$read_lake
             )

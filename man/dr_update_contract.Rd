@@ -14,21 +14,23 @@ dr_remove_contract(x)
 }
 \arguments{
 \item{x}{A contract, product, or modular workflow for updating; a product or
-  modular workflow for extraction and removal.}
+modular workflow for extraction and removal.}
 
 \item{contract}{Replacement contract, named type vector or prototype list.
-  Only used when \code{x} is a product or workflow.}
+Only used when \code{x} is a product or workflow.}
 
 \item{...}{Named revision arguments of \code{\link[=dr_contract_update]{dr_contract_update()}}.}
-
 }
-\value{An updated definition, or the extracted contract specification.}
+\value{
+An updated definition, or the extracted contract specification.
+}
 \description{
 For a standalone contract, supply named revision arguments in \code{...}, such as
 \code{version}, \code{columns} or \code{rules}. The identity/version and guarantee-review
 checks of \code{\link[=dr_contract_update]{dr_contract_update()}} apply. This is the preferred verb spelling;
 \code{dr_contract_update()} is a deprecated compatibility name.
-
+}
+\details{
 For a product or workflow, \code{contract} replaces its existing attached contract.
 To revise that specification instead, extract it, revise its version, then
 attach it. Removal is idempotent and restores automatic structure inference;

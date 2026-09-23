@@ -1,7 +1,8 @@
 #' Try a product without invoking configured writers
 #'
-#' Executes the product's sources, transformations and checks, with targets,
-#' catalogs and durable run evidence disabled throughout its dependency graph.
+#' Compatibility shorthand for `dr_run(x, write = FALSE)`. Executes sources,
+#' transformations and checks through the same execution path. The write flag
+#' disables targets, catalogs and durable evidence throughout the dependency graph.
 #' The original definition is unchanged. Source and transformation callbacks are
 #' ordinary user code: their own side effects cannot be prevented by the framework.
 #' Read-only access to existing published inputs is still allowed.
@@ -17,40 +18,17 @@
 #'   dr_add_quality(~ amount >= 0)
 #' dr_trial(orders) |> dr_collect()
 dr_trial <- function(x, data = NULL, sources = NULL, stop_on_failure = FALSE) {
-  if (inherits(x, "dr_product_workflow")) {
-    return(dr_trial(
-      compile_product_workflow(x, data, sources),
-      stop_on_failure = stop_on_failure
-    ))
-  }
-  if (!inherits(x, "dr_product")) {
+  if (!inherits(x, c("dr_product", "dr_product_workflow"))) {
     abort(
-      subclass = "dataraft_error_definition",
-      "dr_trial() needs a product definition."
+      "dr_trial() needs a product definition.",
+      subclass = "dataraft_error_definition"
     )
   }
-  if (inherits(x, "dr_model_product")) {
-    x <- apply_execution_defaults(x, product_execution(x, NULL))
-    x$target <- NULL
-    attr(x, "dr_execution_config") <- NULL
-    return(dr_run(
-      x,
-      data = data,
-      sources = sources,
-      stop_on_failure = stop_on_failure
-    ))
-  }
-  x <- replace_execution_sources(x, data, sources)
-  x <- apply_execution_defaults(x, product_execution(x, NULL))
-  clear <- function(product) {
-    rlang::local_error_call(rlang::caller_env())
-    product$target <- NULL
-    product$catalogs <- list()
-    attr(product, "dr_execution_config") <- NULL
-    sources <- lapply(product_sources(product), function(source) {
-      if (inherits(source, "dr_product")) clear(source) else source
-    })
-    replace_product_sources(product, sources)
-  }
-  dr_run(clear(x), evidence = NULL, stop_on_failure = stop_on_failure)
+  dr_run(
+    x,
+    data = data,
+    sources = sources,
+    write = FALSE,
+    stop_on_failure = stop_on_failure
+  )
 }

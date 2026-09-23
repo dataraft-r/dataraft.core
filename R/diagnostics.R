@@ -18,7 +18,7 @@ dr_status <- function(x, asset = NULL) {
     return(x$status)
   }
   if (inherits(x, "dr_measurement_set") || is_measurement(x)) {
-    x <- dataraft.metrics::dr_internal_diagnostic_measurements(x)
+    x <- dr_diagnostic_measurements(x)
     return(dplyr::bind_rows(lapply(x, function(value) {
       manifest <- attr(value, "dr_manifest")
       tibble::tibble(
@@ -112,29 +112,7 @@ dr_status <- function(x, asset = NULL) {
 #' @name metadata_filter
 
 metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
-  rlang::local_error_call(rlang::caller_env())
-  dataraft.lake::dr_internal_assert_lake(lake)
-  filters <- character()
-  params <- list()
-  if (!is.null(asset)) {
-    asset_id(asset)
-    filters <- c(filters, "asset = ?")
-    params <- c(params, list(asset))
-  }
-  if (!is.null(run_id)) {
-    scalar(run_id, "run_id")
-    filters <- c(filters, "run_id = ?")
-    params <- c(params, list(run_id))
-  }
-  sql <- paste("SELECT * FROM", dataraft.lake::dr_internal_meta(lake, table))
-  if (length(filters)) {
-    sql <- paste(sql, "WHERE", paste(filters, collapse = " AND "))
-  }
-  dataraft.lake::dr_internal_query(
-    lake,
-    sql,
-    if (length(params)) params else NULL
-  )
+  dr_filter_metadata(lake, table, asset = asset, run_id = run_id)
 }
 
 
@@ -144,7 +122,10 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
 #' for that exact published stand. Cached runs resolve to the original release's
 #' checks. These choices prevent an older successful run hiding a recent
 #' failure.
-#' @param x A lake, run result, measurement, measurement set, dbt result or
+#' @param ... For a rule, optional name, description and dimension.
+#' @param action,threshold,engine,volatile See [dr_quality_rule()].
+#'   New definitions use only action and threshold as publication policy.
+#' @param x A one-sided formula to construct a quality rule, or a lake, run result, measurement, measurement set, dbt result or
 #'   quality tibble.
 #'   Measurement sets resolve their exact input releases using retained
 #'   references. Unavailable references return explicit `not_checked` evidence.
@@ -160,12 +141,64 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
 #' contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
 #'   c(id = "integer"), key = "id")
 #' dr_quality(dr_validate(data.frame(id = c(1L, 1L)), contract))
-dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
+dr_quality <- function(
+  x,
+  run_id = NULL,
+  asset = NULL,
+  release = NULL,
+  ...,
+  action = "block",
+  threshold = 0,
+  engine = "native",
+  volatile = FALSE
+) {
+  if (inherits(x, "formula") || is.function(x)) {
+    options <- list(...)
+    if (
+      length(options) &&
+        (is.null(names(options)) ||
+          any(!names(options) %in% c("name", "description", "dimension")))
+    ) {
+      abort(
+        "Use action and threshold for rule policy; optional fields are name, description and dimension."
+      )
+    }
+    if (!is.null(run_id) || !is.null(asset) || !is.null(release)) {
+      abort("run_id, asset and release select evidence, not rule definitions.")
+    }
+    builder <- is.function(x) && identical(engine, "pointblank")
+    rule <- do.call(
+      dr_quality_rule,
+      c(
+        list(
+          check = x,
+          action = action,
+          threshold = threshold,
+          engine = if (builder) "native" else engine,
+          volatile = volatile
+        ),
+        options
+      )
+    )
+    if (builder) {
+      rule$engine <- "pointblank"
+    }
+    return(rule)
+  }
+  if (
+    !missing(action) ||
+      !missing(threshold) ||
+      !missing(engine) ||
+      !missing(volatile)
+  ) {
+    abort("Rule policy options require a formula or check function.")
+  }
+  rlang::check_dots_empty()
   if (inherits(x, "dr_measurement_set")) {
-    return(dataraft.metrics::dr_internal_measurement_quality(x))
+    return(dr_measurement_quality(x))
   }
   if (is.data.frame(x) && is.list(attr(x, "dr_manifest"))) {
-    return(dataraft.metrics::dr_internal_measurement_quality(list(x)))
+    return(dr_measurement_quality(list(x)))
   }
   if (inherits(x, "dr_lake")) {
     if (
@@ -177,7 +210,7 @@ dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
       )
     }
     if (!is.null(release)) {
-      run_id <- dataraft.lake::dr_internal_resolve_release(
+      run_id <- dr_resolve_release(
         x,
         asset,
         release
@@ -194,7 +227,7 @@ dr_quality <- function(x, run_id = NULL, asset = NULL, release = NULL) {
       runs <- runs[order(runs$started_at, runs$run_id, decreasing = TRUE), ]
       run_id <- runs$run_id[[1]]
       if (runs$status[[1]] == "cached") {
-        run_id <- dataraft.lake::dr_internal_resolve_release(
+        run_id <- dr_resolve_release(
           x,
           runs$asset[[1]],
           runs$release_id[[1]]
@@ -297,11 +330,11 @@ dr_lineage <- function(
   direction <- match.arg(direction)
   flag(recursive, "recursive")
   if (inherits(x, "dr_lake")) {
-    edges <- dataraft.lake::dr_registry(x, "lineage_edges")
+    edges <- dr_registry_data(x, "lineage_edges")
   } else if (inherits(x, "dr_run_result")) {
     edges <- run_result_lineage(x)
   } else if (inherits(x, "dr_measurement_set") || is_measurement(x)) {
-    x <- dataraft.metrics::dr_internal_diagnostic_measurements(x)
+    x <- dr_diagnostic_measurements(x)
     edges <- unique(dplyr::bind_rows(lapply(x, function(value) {
       manifest <- attr(value, "dr_manifest")
       tibble::tibble(
@@ -314,7 +347,7 @@ dr_lineage <- function(
       )
     })))
   } else {
-    source <- dataraft.dbt::dr_dbt_lineage(x)
+    source <- dr_backend_lineage(x)
     edges <- tibble::tibble(
       run_id = rep("", nrow(source)),
       from_id = source$from,
@@ -447,7 +480,11 @@ run_result_message <- function(x) {
     }
     return(message)
   }
-  blocked <- checks[!checks$status %in% c("passed", "warning"), , drop = FALSE]
+  blocked <- checks[
+    !checks$status %in% c("passed", "warning", "unvalidated"),
+    ,
+    drop = FALSE
+  ]
   if (nrow(blocked)) {
     # Counts belong to each rule, not distinct rows across different checks.
     detail <- vapply(

@@ -36,7 +36,7 @@ removes every failing row before writing and retains it locally on the result.
 It supports native row formulas only. Standalone validation still blocks
 rejected rows until an execution path actually removes them.}
 
-\item{threshold}{Alias for max_failure, a fraction from zero to one. For
+\item{threshold}{Permitted fraction of failed test units, from zero to one. For
 quarantine, every rejected row is removed regardless of threshold.}
 
 \item{dimension}{Optional ODCS quality dimension.}
