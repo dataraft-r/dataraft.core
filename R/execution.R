@@ -306,6 +306,10 @@ dr_run.dr_product <- function(
     object <- dr_set_target(object, lake)
   }
   object <- apply_execution_defaults(object, execution)
+  if (write && length(object$output_ports) > 1L && isTRUE(list(...)$cache)) {
+    abort("Multiple output ports require cache = FALSE so every port receives the checked delivery.",
+      subclass = "dataraft_error_definition")
+  }
   policies <- if (write && !is.null(object$target)) {
     dr_assert_policies(object, event = "publish")
   } else NULL
