@@ -123,6 +123,8 @@ dr_publish_metadata.default <- function(catalog, metadata, ...) {
 #'   targets, `business_date`, `notify`, `cache` and `previous`. Supply a previous
 #'   publication to reject stale corrections if the destination has changed. dbt builds accept
 #'   [dataraft.dbt::dr_dbt_publish()] options such as `contract`, `asset` and `layer`.
+#'   When an output port has an SLA, supply `business_date`. Successful
+#'   publication records the SLA evaluation in run metadata and durable evidence.
 #' @returns A run result. An exception on failure includes `condition$result`.
 #' @export
 #' @examplesIf requireNamespace("dataraft.lake", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE)
@@ -279,6 +281,7 @@ dr_run.dr_product <- function(
   data = NULL,
   sources = NULL,
   write = TRUE,
+  business_date = NULL,
   ...
 ) {
   flag(write, "write")
@@ -307,6 +310,14 @@ dr_run.dr_product <- function(
     dr_assert_policies(object, event = "publish")
   } else NULL
   object <- dr_validate(object, .write = write)
+  sla_ports <- Filter(function(port) !is.null(port$sla), object$output_ports)
+  if (write && length(sla_ports)) {
+    if (is.null(business_date)) {
+      abort("Supply business_date when publishing an output with an SLA.",
+        subclass = "dataraft_error_definition")
+    }
+    for (port in sla_ports) dr_check_sla(port$sla, business_date)
+  }
   context <- .context %||% new_product_context(evidence, write)
   if (exists(object$id, context$results, inherits = FALSE)) {
     return(get(object$id, context$results, inherits = FALSE))
@@ -316,7 +327,12 @@ dr_run.dr_product <- function(
   warnings <- list()
   result <- tryCatch(
     withCallingHandlers(
-      dr_execute_target(if (write) object$target else NULL, object, ...),
+      if (is.null(business_date)) {
+        dr_execute_target(if (write) object$target else NULL, object, ...)
+      } else {
+        dr_execute_target(if (write) object$target else NULL, object,
+          business_date = business_date, ...)
+      },
       warning = function(w) {
         warnings[[length(warnings) + 1L]] <<- w
         invokeRestart("muffleWarning")
@@ -392,6 +408,18 @@ dr_run.dr_product <- function(
       outputs = result$outputs
     )
   )
+  if (write && identical(result$status, "published") && length(sla_ports)) {
+    delivered_at <- as.POSIXct(result$finished_at,
+      format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+    if (is.na(delivered_at)) {
+      abort("The target returned an invalid delivery timestamp for SLA evaluation.",
+        subclass = "dataraft_error_definition")
+    }
+    result$metadata$sla <- lapply(sla_ports, function(port) {
+      dr_check_sla(port$sla, business_date,
+        delivered_at = delivered_at, at = delivered_at)
+    })
+  }
   result$lifecycle <- tibble::tibble(
     state = c("defined", "validated", "planned", "running", result$status),
     at = c(
@@ -437,7 +465,7 @@ dr_run.dr_product <- function(
 
 #' @export
 #' @noRd
-dr_execute_target.default <- function(target, product, ...) {
+dr_execute_target.default <- function(target, product, business_date = NULL, ...) {
   rlang::check_dots_empty()
   run <- uid()
   started <- now()
