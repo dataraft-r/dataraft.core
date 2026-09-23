@@ -458,7 +458,10 @@ run_result_message <- function(x) {
     cached = "reused its published result; it is ready to collect.",
     blocked = "is blocked; no successful output is available.",
     missing = "is blocked because an input delivery is missing.",
-    error = "failed during execution; no successful output is available.",
+    error = if (length(x$port_outputs) &&
+      any(vapply(x$port_outputs, function(port) identical(port$status, "published"), logical(1)))) {
+      "failed after one or more output ports committed; inspect result$port_outputs."
+    } else "failed during execution; no successful output is available.",
     failed = "failed during execution; no successful output is available.",
     skipped = "was skipped; no successful output is available.",
     "has no confirmed successful output."
