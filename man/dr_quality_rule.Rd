@@ -9,8 +9,8 @@
 dr_quality_rule(
   name = NULL,
   check = NULL,
-  severity = c("error", "warning"),
-  max_failure = 0,
+  severity = lifecycle::deprecated(),
+  max_failure = lifecycle::deprecated(),
   description = "",
   engine = c("native", "pointblank"),
   action = NULL,
@@ -24,9 +24,12 @@ dr_quality_counts(n_failed, n_total)
 dr_pointblank_checks(
   name,
   build,
-  severity = c("error", "warning"),
-  max_failure = 0,
-  policy = c("rule", "agent")
+  severity = lifecycle::deprecated(),
+  max_failure = lifecycle::deprecated(),
+  policy = c("rule", "agent"),
+  action = NULL,
+  threshold = NULL,
+  volatile = FALSE
 )
 }
 \arguments{
@@ -44,11 +47,11 @@ for their own collection.}
 \item{severity}{Compatibility argument: \code{"error"} corresponds to
 \code{action = "block"}, \code{"warning"} to \code{action = "warn"}. Prefer \code{action}
 for new \code{dr_quality_rule()} definitions. Supplying both is an error.
-\code{dr_pointblank_checks()} continues to use \code{severity}.}
+Deprecated since 0.1.0.9005; use \code{action} for every engine.}
 
 \item{max_failure}{Compatibility argument for \code{threshold}. Prefer \code{threshold}
 for new \code{dr_quality_rule()} definitions. Supplying both is an error.
-\code{dr_pointblank_checks()} continues to use \code{max_failure}.}
+Deprecated since 0.1.0.9005. Both names denote a fraction, never a row count.}
 
 \item{description}{Rule description.}
 
@@ -75,7 +78,7 @@ are labelled volatile, cannot authorize attestations and cannot use release cach
 
 \item{build}{Function creating a pointblank agent from a lazy table.}
 
-\item{policy}{\code{"rule"} preserves the explicit \code{severity} / \code{max_failure}
+\item{policy}{\code{"rule"} preserves the explicit \code{action} / \code{threshold}
 gate. \code{"agent"} uses pointblank's per-step action levels: warnings permit
 publication, stop/error and critical states block. Native pointblank
 threshold rounding applies. An unconfigured, inactive or errored agent

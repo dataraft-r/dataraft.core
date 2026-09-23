@@ -18,9 +18,9 @@ review is required, for example after changing an R rule or row grain.
 No compatibility result is inferred by running example data.
 }
 \examples{
-old <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-  c(id = "integer"), key = "id")
-new <- dr_contract("orders", "2", "Analytics", "Orders", "One order",
-  c(id = "integer", amount = "numeric"), key = "id")
+old <- dr_contract("orders", version = "1",
+  columns = c(id = "integer"), key = "id")
+new <- dr_contract("orders", version = "2",
+  columns = c(id = "integer", amount = "numeric"), key = "id")
 dr_contract_diff(old, new)
 }

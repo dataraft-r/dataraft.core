@@ -29,14 +29,14 @@
 #'   dr_collect()
 dr_execution_config <- function(
   quality = "native",
-  relationships = "native",
+  relationships = "dm",
   to = NULL,
   layer = NULL
 ) {
   scalar(quality, "quality")
   scalar(relationships, "relationships")
   normalize_quality_engine(quality)
-  relationships <- match.arg(relationships, c("native", "dm"))
+  relationships <- match.arg(relationships, "dm")
   if (!is.null(layer)) {
     ident(layer)
   }

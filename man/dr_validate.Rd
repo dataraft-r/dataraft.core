@@ -44,8 +44,8 @@ Preflight does not evaluate source callbacks or prove data quality.
 }
 \examples{
 contract <- dr_contract(
-  "orders", "1.0.0", "Analytics", "Order amounts", "One order",
-  c(order_id = "integer", amount = "numeric"), key = "order_id"
+  "orders", version = "1.0.0",
+  columns = c(order_id = "integer", amount = "numeric"), key = "order_id"
 )
 dr_validate(data.frame(order_id = 1:2, amount = c(25, 75)), contract)
 }

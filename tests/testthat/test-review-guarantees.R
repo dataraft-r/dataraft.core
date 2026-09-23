@@ -1,5 +1,9 @@
 test_that("inferred schema is not presented as independent validation", {
-  result <- dr_trial(dr_product("delivery", data.frame(value = c("a", NA))))
+  result <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_product("delivery", data.frame(value = c("a", NA)))
+  )
   expect_identical(result$validation_status, "unvalidated")
   expect_setequal(
     result$quality$rule[result$quality$status == "unvalidated"],
@@ -13,7 +17,10 @@ test_that("inferred schema is not presented as independent validation", {
   )
   declared <- dr_product("delivery", data.frame(value = "a")) |>
     dr_add_contract(dr_contract(columns = c(value = "character")))
-  expect_identical(dr_trial(declared)$validation_status, "passed")
+  expect_identical(
+    dr_run(write = FALSE, stop_on_failure = FALSE, declared)$validation_status,
+    "passed"
+  )
 })
 
 test_that("unstable quality callbacks need an explicit volatile declaration", {
@@ -157,4 +164,81 @@ test_that("products bind their first execution delivery without a workflow", {
     ),
     "both data and sources"
   )
+})
+
+test_that("production reuses a checked rule while dry runs verify again", {
+  calls <- 0L
+  original <- quality_formula_units
+  local_mocked_bindings(quality_formula_units = function(...) {
+    calls <<- calls + 1L
+    original(...)
+  })
+  predicate <- ~ value > 0
+  environment(predicate) <- baseenv()
+  rule <- dr_quality_rule("review2-positive", predicate)
+  product <- dr_product("review2", data.frame(value = 1:3)) |>
+    dr_add_quality(rule)
+  dr_run(product, write = FALSE)
+  expect_identical(calls, 2L)
+  dr_run(product)
+  expect_identical(calls, 3L)
+  dr_run(product, write = FALSE)
+  expect_identical(calls, 5L)
+})
+
+test_that("trial is deprecated and has the same failure default as run", {
+  withr::local_options(lifecycle_verbosity = "warning")
+  product <- dr_product("review2", data.frame(value = -1)) |>
+    dr_add_quality(~ value > 0)
+  expect_warning(
+    expect_error(dr_trial(product), class = "dataraft_error"),
+    class = "lifecycle_warning_deprecated"
+  )
+  expect_error(dr_run(product, write = FALSE), class = "dataraft_error")
+})
+
+test_that("quality specifications use one canonical vocabulary", {
+  native <- dr_quality_rule(~ x > 0, action = "warn", threshold = 0.1)
+  expect_identical(native$action, "warn")
+  expect_identical(native$threshold, 0.1)
+  expect_null(native$severity)
+  expect_null(native$max_failure)
+  agent <- dr_pointblank_checks(
+    "positive",
+    identity,
+    action = "warn",
+    threshold = 0.1
+  )
+  expect_identical(
+    agent[c("action", "threshold")],
+    native[c("action", "threshold")]
+  )
+  withr::local_options(lifecycle_verbosity = "warning")
+  expect_warning(
+    dr_quality_rule(~ x > 0, severity = "warning"),
+    class = "lifecycle_warning_deprecated"
+  )
+  expect_warning(
+    dr_pointblank_checks("positive", identity, max_failure = 0.1),
+    class = "lifecycle_warning_deprecated"
+  )
+})
+
+test_that("source and contract edits are pure and use NULL to remove", {
+  reads <- 0L
+  source <- function() {
+    reads <<- reads + 1L
+    data.frame(id = 1L)
+  }
+  original <- dr_product("review2") |>
+    dr_set_sources(delivery = source) |>
+    dr_add_contract(c(id = "integer"))
+  changed <- original |>
+    dr_set_sources(delivery = NULL) |>
+    dr_add_contract(NULL)
+  expect_length(changed$sources, 0L)
+  expect_null(changed$contract)
+  expect_length(original$sources, 1L)
+  expect_s3_class(original$contract, "dr_contract")
+  expect_identical(reads, 0L)
 })

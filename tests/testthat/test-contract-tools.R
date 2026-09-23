@@ -31,11 +31,11 @@ test_that("drafts infer types only and require an explicit review transition", {
 test_that("contract differences distinguish tightening from metadata and semantic changes", {
   old <- dr_contract(
     "orders",
-    "1",
-    "Analytics",
-    "Orders",
-    "One order",
-    c(id = "integer", amount = "numeric"),
+    version = "1",
+    owner = "Analytics",
+    description = "Orders",
+    grain = "One order",
+    columns = c(id = "integer", amount = "numeric"),
     required = "id"
   )
   new <- old

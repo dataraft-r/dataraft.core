@@ -2,68 +2,46 @@
 % Please edit documentation in R/product-workflow.R
 \name{workflow-components}
 \alias{workflow-components}
-\alias{dr_add_product}
 \alias{dr_add_recipe}
-\alias{dr_update_product}
+\alias{dr_add_product}
 \alias{dr_update_recipe}
-\alias{dr_remove_product}
 \alias{dr_remove_recipe}
-\alias{dr_extract_product}
 \alias{dr_extract_recipe}
-\title{Assemble product specifications and reusable recipes}
+\title{Attach reusable preparation to a product}
 \usage{
-dr_add_product(x, product)
-
 dr_add_recipe(x, recipe)
 
-dr_update_product(x, product)
+dr_add_product(x, product)
 
 dr_update_recipe(x, recipe)
 
-dr_remove_product(x)
-
 dr_remove_recipe(x)
-
-dr_extract_product(x)
 
 dr_extract_recipe(x)
 }
 \arguments{
-\item{x}{A modular \code{\link[=dr_workflow]{dr_workflow()}}. \code{dr_add_recipe()} also accepts a table product.}
+\item{x}{A product definition.}
 
-\item{product}{A product specification carrying identity and output checks.}
+\item{recipe}{A recipe from \code{\link[=dr_recipe]{dr_recipe()}}.}
 
-\item{recipe}{A preparation specification from \code{\link[=dr_recipe]{dr_recipe()}}.}
+\item{product}{A replacement product definition for the deprecated builder.}
 }
 \value{
-An updated definition, or the extracted component.
+An updated product definition.
 }
 \description{
-An empty \code{\link[=dr_workflow]{dr_workflow()}} combines one product specification, one optional
-recipe, primary sources and an optional destination. Components remain
-independent R values. \verb{dr_add_*()} rejects occupied slots; \verb{dr_update_*()} replaces
-an existing slot and \verb{dr_remove_*()} clears it. Extraction returns the definition,
-never executed data. These edits never read sources or invoke writers.
+Products own their sources, preparation, checks and destination. There is no
+separate modular workflow object or execution method. Recipes remain reusable
+definitions and never execute when attached.
 }
-\details{
-A product specification may carry its own sources, checks and destination.
-Workflow sources and destinations must not conflict with those settings.
-Keep preparation in the recipe when using this interface: products with
-embedded transformations are rejected by \code{dr_add_product()}. Existing direct
-product pipelines remain executable. Model products can be added directly;
-prepare their member tables with recipes before assembling the dm model.
+\section{Lifecycle}{
 
-\code{\link[=dr_trial]{dr_trial()}}, \code{\link[=dr_run]{dr_run()}} and \code{\link[=dr_publish]{dr_publish()}} compile the components into the existing
-product execution graph, retaining its quality gates, dependency sharing,
-lazy behavior and immutable release semantics. Use \verb{data =} at execution to
-bind a first primary input or replace the existing single primary delivery.
+The old \code{dr_add_product()} builder is soft-deprecated until 2027-01-01.
+Begin directly with \code{\link[=dr_product]{dr_product()}} instead.
 }
+
 \examples{
-spec <- dr_product("orders") |>
-  dr_add_contract(c(id = "integer", amount = "numeric")) |>
-  dr_add_quality(~ amount >= 0)
 preparation <- dr_recipe() |> dr_step_mutate(amount = round(amount, 2))
-flow <- dr_workflow() |> dr_add_product(spec) |> dr_add_recipe(preparation)
-dr_trial(flow, data = data.frame(id = 1:2, amount = c(10.123, 20))) |>
-  dr_collect()
+dr_product("orders", data.frame(amount = 10.123)) |>
+  dr_add_recipe(preparation) |> dr_run(write = FALSE) |> dr_collect()
 }

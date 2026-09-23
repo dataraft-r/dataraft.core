@@ -7,8 +7,7 @@
 #' and receive missing reference attributes.
 #'
 #' dm constructs and examines primary and foreign key constraints. The join
-#' uses dplyr and verifies the row count. The historical `"native"` engine name
-#' remains a compatibility alias for the same dm implementation.
+#' uses dplyr and verifies the row count. Only the dm engine is supported.
 #' Lookup checks run at this transformation step, before subsequent transforms.
 #' Ordinary [dr_add_quality()] checks still apply to the final candidate.
 #'
@@ -26,7 +25,7 @@
 #' @param by Equality keys, supplied as a character vector, a named vector
 #'   mapping input to reference columns, or [dplyr::join_by()]. Inequality,
 #'   rolling and cross joins belong in ordinary dplyr transformations.
-#' @param engine Constraint validation engine: `"dm"`; `"native"` is a legacy alias.
+#' @param engine Constraint validation engine: `"dm"` only.
 #' @param unmatched Whether unmatched input rows cause an error or are retained
 #'   with missing reference values. Unused reference rows are always allowed.
 #' @param suffix Two suffixes for overlapping non-key column names, as in
@@ -52,7 +51,7 @@ dr_add_lookup <- function(
   x,
   source,
   by,
-  engine = c("dm", "native"),
+  engine = "dm",
   unmatched = c("error", "keep"),
   suffix = c(".x", ".y"),
   name = NULL,
@@ -102,7 +101,7 @@ dr_add_lookup <- function(
       name = name,
       source = normalize_source(source, id = x$id, name = name),
       by = lookup_keys(by),
-      engine = match.arg(engine),
+      engine = match.arg(engine, "dm"),
       engine_explicit = !missing(engine),
       unmatched = match.arg(unmatched),
       suffix = lookup_suffix(suffix)
@@ -188,7 +187,7 @@ replace_component_sources.dr_lookup_transform <- function(x, sources, ...) {
 dr_check_component.dr_lookup_transform <- function(x, ...) {
   lookup_keys(x$by)
   lookup_suffix(x$suffix)
-  match.arg(x$engine, c("native", "dm"))
+  match.arg(x$engine, "dm")
   match.arg(x$unmatched, c("error", "keep"))
   if (x$engine == "dm") {
     need("dm")

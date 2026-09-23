@@ -3,7 +3,7 @@
 
 #' Retrieve the last failed execution in this R session
 #'
-#' Recover the result after a failed `dr_trial(...) |> dr_collect()` pipe.
+#' Recover the result after a failed `dr_run(write = FALSE, stop_on_failure = FALSE, ...) |> dr_collect()` pipe.
 #' The result retains checks and local exceptions for [dr_quality_report()],
 #' [dr_quality_rows()] and [dr_quality_errors()]. Successful runs do not replace it.
 #' Only the most recent execution error carrying a result is retained. Definition
@@ -16,7 +16,7 @@
 #' @examples
 #' product <- dr_product("orders", data.frame(amount = -1)) |>
 #'   dr_add_quality(~ amount >= 0)
-#' try(dr_trial(product) |> dr_collect(), silent = TRUE)
+#' try(dr_run(write = FALSE, stop_on_failure = FALSE, product) |> dr_collect(), silent = TRUE)
 #' dr_quality_report(dr_last_failure())
 #' invisible(dr_last_failure(clear = TRUE))
 dr_last_failure <- function(clear = FALSE) {

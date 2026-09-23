@@ -67,13 +67,13 @@ editable_product <- function(x) {
 #' @param reader Optional file reader. CSV, TSV, RDS and Excel have defaults.
 #' @param replace Replace a source with the same name explicitly.
 #' @returns An updated definition. No source data are read.
-#' @seealso [dr_replace_sources()], [dataraft.adapters::dr_source_database()], [dr_trial()]
+#' @seealso [dr_set_sources()], [dataraft.adapters::dr_source_database()], [dr_run()]
 #' @export
 #' @examples
 #' flow <- dr_workflow() |>
 #'   dr_add_product(dr_product("orders")) |>
 #'   dr_add_source(data.frame(id = 1:2, amount = c(25, 75)), name = "orders")
-#' dr_collect(dr_trial(flow))
+#' dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, flow))
 dr_add_source <- function(
   x,
   source,
@@ -81,14 +81,6 @@ dr_add_source <- function(
   reader = NULL,
   replace = FALSE
 ) {
-  if (inherits(x, "dr_product_workflow")) {
-    holder <- dr_product("workflow")
-    holder$sources <- x$sources
-    holder <- dr_add_source(holder, source, name, reader, replace)
-    x$sources <- holder$sources
-    check_workflow_slots(x)
-    return(x)
-  }
   x <- editable_product(x)
   flag(replace, "replace")
   if (is.null(name) && replace) {
@@ -176,7 +168,7 @@ normalize_source <- function(source, id, name, reader = NULL) {
 #' @examples
 #' dr_product("orders", data.frame(amount = c(10, 20))) |>
 #'   dr_add_recipe(dr_recipe() |> dr_step_transform(~ dplyr::mutate(.x, amount = amount * 2))) |>
-#'   dr_trial() |>
+#'   dr_run(write = FALSE, stop_on_failure = FALSE) |>
 #'   dr_collect()
 #' @keywords internal
 #' @noRd
@@ -184,7 +176,7 @@ dr_add_transform <- function(x, transform, name = NULL) {
   if (inherits(x, "dr_model_product")) {
     abort(
       subclass = "dataraft_error_definition",
-      "Transform a member table product, then use dr_replace_sources(model, table_name = product)."
+      "Transform a member table product, then use dr_set_sources(.recursive = TRUE, model, table_name = product)."
     )
   }
   x <- editable_product(x)
@@ -213,7 +205,8 @@ dr_add_transform <- function(x, transform, name = NULL) {
 #'
 #' The contract describes shape and keys; quality rules describe acceptable
 #' values. Checks apply after preparation and gate framework writers.
-#' Adding a contract replaces the previous contract. Quality rules accumulate.
+#' Adding a contract replaces the previous contract; `NULL` removes it.
+#' Quality rules accumulate.
 #' @param x A [dr_product()] specification or modular [dr_workflow()].
 #' @param contract Contract, named type vector, or named list of prototypes.
 #' @param quality One-sided row predicate, function, rule, or list of rules.
@@ -228,14 +221,13 @@ dr_add_transform <- function(x, transform, name = NULL) {
 #'   dr_add_contract(c(id = "integer", amount = "numeric")) |>
 #'   dr_add_quality(~ amount >= 0)
 dr_add_contract <- function(x, contract) {
-  if (inherits(x, "dr_product_workflow")) {
-    x$product <- dr_add_contract(dr_extract_product(x), contract)
-    check_workflow_slots(x)
+  x <- editable_product(x)
+  if (is.null(contract)) {
+    x$contract <- NULL
     return(x)
   }
-  x <- editable_product(x)
   if (!inherits(contract, "dr_contract")) {
-    contract <- dr_contract(paste0(x$id, ".contract"), columns = contract)
+    contract <- new_contract(paste0(x$id, ".contract"), columns = contract)
   }
   if (isTRUE(attr(contract, "dr_anonymous"))) {
     contract$id <- paste0(x$id, ".contract")
@@ -273,7 +265,6 @@ dr_add_quality <- function(
       rule <- x$quality[[i]]
       if (!is.null(action)) {
         rule$action <- match.arg(action, c("block", "warn", "quarantine"))
-        rule$severity <- if (action == "warn") "warning" else "error"
       }
       if (!is.null(threshold)) {
         if (
@@ -285,7 +276,7 @@ dr_add_quality <- function(
         ) {
           abort("threshold must be between zero and one.")
         }
-        rule$max_failure <- threshold
+        rule$threshold <- threshold
       }
       if (!is.null(dimension)) {
         rule$dimension <- match.arg(
@@ -310,7 +301,7 @@ dr_add_quality <- function(
 
 #' Set a publication destination
 #'
-#' Store or replace a destination without writing data. [dr_trial()] disables
+#' Store or replace a destination without writing data. [dr_run()] disables
 #' it; [dr_run()] and [dr_publish()] execute it after successful output checks.
 #' @param x A [dr_product()] or modular [dr_workflow()] definition.
 #' @param target Lake folder path, connected lake, configuration or target
@@ -322,11 +313,6 @@ dr_add_quality <- function(
 #'   dr_add_product(dr_product("orders")) |>
 #'   dr_set_target("data/orders")
 dr_set_target <- function(x, target) {
-  if (inherits(x, "dr_product_workflow")) {
-    x$target <- normalize_target(target)
-    check_workflow_slots(x)
-    return(x)
-  }
   x <- editable_product(x)
   x$target <- normalize_target(target)
   x
@@ -454,7 +440,7 @@ validate_product_graph <- function(product, write = TRUE) {
       args <- data$contract
       args[c("kind", "automatic_schema")] <- NULL
       args$columns <- unlist(args$columns, use.names = TRUE)
-      do.call(dr_contract, args)
+      do.call(new_contract, args)
     }
     rules <- c(data$contract$rules, data$quality)
     if (anyDuplicated(vapply(rules, `[[`, character(1), "name"))) {

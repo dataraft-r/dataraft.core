@@ -12,7 +12,6 @@ dr_component_capabilities(
   write = NA,
   lazy = NA,
   transactions = NA,
-  partition = NA,
   immutable = NA
 )
 }
@@ -21,13 +20,13 @@ dr_component_capabilities(
 
 \item{...}{Reserved for adapter options.}
 
-\item{read, write, lazy, transactions, partition, immutable}{Logical scalars.}
+\item{read, write, lazy, transactions, immutable}{Logical scalars.}
 }
 \value{
 A named list of logical capabilities.
 }
 \description{
-Adapters report the same six logical fields. \code{TRUE} means supported, \code{FALSE}
+Adapters report the same five logical fields. \code{TRUE} means supported, \code{FALSE}
 means unsupported, and \code{NA} means undeclared or dependent on user code.
 Capabilities describe behavior; they do not test remote permissions.
 Extension methods can use \code{\link[=dr_component_capabilities]{dr_component_capabilities()}} for a stable shape.

@@ -49,7 +49,7 @@ retained last failure is not cleared.
 \dontshow{if (interactive()) withAutoprint(\{ # examplesIf}
 orders <- dr_product("orders", data.frame(amount = c(10, -2))) |>
   dr_add_quality(list(positive = ~ amount >= 0))
-result <- dr_trial(orders, stop_on_failure = FALSE)
+result <- dr_run(write = FALSE, orders, stop_on_failure = FALSE)
 dr_review(result, rule = "positive", limit = 20)
 dr_review(result, what = "report")
 \dontshow{\}) # examplesIf}

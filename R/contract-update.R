@@ -26,7 +26,7 @@
 #' @param ... Other named arguments of [dr_contract()] to replace in full, such as
 #'   `required`, `key`, `grain`, `rules`, `owner` or `column_metadata`.
 #' @returns A new `contract` specification. Use [dr_contract_diff()] to review it.
-#' This legacy name is retained for compatibility. Prefer [dr_update_contract()]
+#' This legacy name is retained for compatibility. Prefer [dr_contract_update()]
 #' in new code; argument positions and revision checks remain unchanged.
 #' @seealso [dr_contract()], [dr_contract_diff()]
 #' @export
@@ -65,7 +65,7 @@ dr_contract_update <- function(
         !all(
           names(changes) %in%
             setdiff(
-              names(formals(dr_contract)),
+              names(formals(new_contract)),
               c(
                 "id",
                 "version",
@@ -90,7 +90,7 @@ dr_contract_update <- function(
   additions <- if (is.null(columns)) {
     list()
   } else {
-    dr_contract(columns = columns)$columns
+    new_contract(columns = columns)$columns
   }
   if (length(intersect(names(additions), remove))) {
     abort(
@@ -152,5 +152,5 @@ dr_contract_update <- function(
     args$column_metadata[remove] <- NULL
   }
   args[names(changes)] <- changes
-  do.call(dr_contract, args)
+  do.call(new_contract, args)
 }

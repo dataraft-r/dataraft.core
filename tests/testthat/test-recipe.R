@@ -16,10 +16,13 @@ test_that("recipes reuse deferred tidy expressions without changing definitions"
     dr_add_recipe(preparation)
   expect_identical(calls, 0L)
   expect_equal(
-    dr_collect(dr_trial(a)),
+    dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, a)),
     tibble::tibble(id = 1:2, amount = c(20, 40))
   )
-  expect_equal(dr_collect(dr_trial(b))$amount, 60)
+  expect_equal(
+    dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, b))$amount,
+    60
+  )
   expect_identical(calls, 1L)
   expect_identical(preparation, original)
 })
@@ -33,7 +36,7 @@ test_that("summaries, selection and custom transformations retain ordinary seman
   data <- data.frame(group = c("a", "a", "a", "b"), amount = c(1, 1, 2, 4))
   out <- dr_product("summary", data) |>
     dr_add_recipe(preparation) |>
-    dr_trial() |>
+    dr_run(write = FALSE, stop_on_failure = FALSE) |>
     dr_collect()
   expect_equal(out, tibble::tibble(group = c("a", "b"), total = c(4, 5)))
 })
@@ -50,9 +53,14 @@ test_that("recipe lookups remain replaceable shared execution dependencies", {
     dr_add_recipe(preparation) |>
     dr_add_source(data.frame(id = 1:2), name = "orders")
   expect_identical(calls, 0L)
-  expect_equal(dr_collect(dr_trial(flow))$region, c("North", "South"))
+  expect_equal(
+    dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, flow))$region,
+    c("North", "South")
+  )
   expect_identical(calls, 1L)
-  corrected <- dr_trial(
+  corrected <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
     flow,
     sources = list(customers = data.frame(id = 1:2, region = c("East", "West")))
   )

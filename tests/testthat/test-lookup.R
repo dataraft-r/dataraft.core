@@ -73,7 +73,7 @@ test_that("orphan and missing child keys require an explicit keep policy", {
   expect_equal(kept$id, input$id)
 })
 
-test_that("dm and native lookups enforce the same null and cardinality policy", {
+test_that("dm lookups enforce the same null and cardinality policy", {
   skip_if_not_installed("dm")
   input <- data.frame(id = c("a", "a", "b"), month = c(1L, 2L, 1L))
   parent <- data.frame(
@@ -81,7 +81,7 @@ test_that("dm and native lookups enforce the same null and cardinality policy", 
     month = c(1L, 2L, 1L),
     due = c(10, 20, 30)
   )
-  outputs <- lapply(c("native", "dm"), function(engine) {
+  outputs <- lapply("dm", function(engine) {
     definition <- dr_product("payments") |> dr_add_source(input)
     output <- definition |>
       dr_add_lookup(parent, by = c("id", "month"), engine = engine) |>
@@ -112,7 +112,6 @@ test_that("dm and native lookups enforce the same null and cardinality policy", 
     expect_s3_class(invalid$error$parent, "dr_lookup_parent_key")
     output
   })
-  expect_equal(outputs[[1]], outputs[[2]])
   expect_equal(outputs[[1]]$due, c(10, 20, 30))
 })
 

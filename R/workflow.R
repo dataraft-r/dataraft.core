@@ -14,9 +14,6 @@
 #'   dr_add_recipe(dr_recipe() |> dr_step_transform(function(data) dplyr::filter(data, id > 1))) |>
 #'   dr_plan()
 dr_plan <- function(pipeline) {
-  if (inherits(pipeline, "dr_product_workflow")) {
-    return(product_plan(compile_product_workflow(pipeline)))
-  }
   if (inherits(pipeline, "dr_product")) {
     return(product_plan(pipeline))
   }

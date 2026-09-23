@@ -17,7 +17,7 @@ test_that("review defaults to the retained failure and invisibly returns display
   product <- dr_product("orders", data.frame(amount = c(-2, 1, -3))) |>
     dr_add_quality(list(positive = ~ amount >= 0))
   expect_error(
-    dr_trial(product) |> dr_collect(),
+    dr_run(write = FALSE, stop_on_failure = FALSE, product) |> dr_collect(),
     class = "dataraft_error_quality"
   )
   retained <- dr_last_failure()
@@ -69,7 +69,7 @@ test_that("review requires a specific row check when several checks fail", {
   )
   product <- dr_product("orders", data.frame(amount = c(-2, 101))) |>
     dr_add_quality(list(positive = ~ amount >= 0, small = ~ amount < 100))
-  result <- dr_trial(product)
+  result <- dr_run(write = FALSE, stop_on_failure = FALSE, product)
   expect_error(
     dr_review(result),
     "Several checks",
@@ -85,7 +85,9 @@ test_that("invalid choices and inapplicable row arguments never open a viewer", 
     View = function(...) stop("must not view"),
     .package = "utils"
   )
-  result <- dr_trial(
+  result <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
     dr_product("orders", data.frame(amount = -1)) |>
       dr_add_quality(~ amount >= 0)
   )
@@ -166,7 +168,7 @@ test_that("model results retain table/check selection", {
       )
     )
   )
-  result <- dr_trial(spec)
+  result <- dr_run(write = FALSE, stop_on_failure = FALSE, spec)
   expect_equal(dr_review(result, rule = "orders/positive")$amount, -1)
   expect_identical(
     dr_review(result, what = "report"),

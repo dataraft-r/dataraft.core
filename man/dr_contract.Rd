@@ -2,104 +2,41 @@
 % Please edit documentation in R/contracts.R
 \name{dr_contract}
 \alias{dr_contract}
-\title{Define a data contract}
+\title{Define the shape and identity of a data contract}
 \usage{
 dr_contract(
   id = "contract",
-  version = "1.0.0",
-  owner = "",
-  description = "",
-  grain = "",
   columns,
-  required = names(columns),
   key = character(),
   rules = list(),
-  producer = owner,
-  max_age_hours = NULL,
-  allow_empty = FALSE,
-  allow_extra = FALSE,
-  operator = NULL,
-  column_metadata = list(),
-  governance = list(),
-  constraints = list()
+  version = "1.0.0",
+  ...
 )
 }
 \arguments{
-\item{id}{Optional contract identifier. An unnamed contract is scoped to
-the product when added with \code{\link[=dr_add_contract]{dr_add_contract()}}.}
+\item{id}{Contract identifier; omitted identifiers are scoped to their product.}
+
+\item{columns}{Named R type vector, or named list of zero-length prototypes.}
+
+\item{key}{Unique, non-null key columns.}
+
+\item{rules}{Quality rules or named row predicates.}
 
 \item{version}{Immutable definition version.}
 
-\item{owner}{Optional business owner.}
-
-\item{description}{Optional business description.}
-
-\item{grain}{Optional meaning of one row.}
-
-\item{columns}{Named character vector of R types: character, integer,
-numeric, logical, Date, POSIXct, integer64 or list. A named list of
-zero-length prototypes such as \code{list(id = integer(), amount = double())}
-is also accepted. Factors describe character labels: validation preserves
-factors in memory, but database storage need not preserve levels or order.
-Integer64 columns remain distinct from doubles; no numeric conversion is
-performed. Caller-owned DuckDB connections must use
-\code{DBI::dbConnect(duckdb::duckdb(), bigint = "integer64")} to preserve them.
-List columns require a target that supports nested data. \code{numeric} accepts
-plain integer and double vectors; \code{integer} accepts only integer vectors.
-\code{POSIXct} checks the class, not timezone or fractional-second precision.
-Lazy tables use the driver's zero-row prototype for type checks. Use
-\code{required} for nullability and \code{rules} for ranges and enum membership;
-units and currency in \code{column_metadata} are descriptive, not enforced.}
-
-\item{required}{Non-null columns.}
-
-\item{key}{Unique key columns.}
-
-\item{rules}{A quality rule, one-sided formula, or list of rules/formulas.
-List names label rules, with the same grammar as \code{\link[=dr_add_quality]{dr_add_quality()}}.}
-
-\item{producer}{Contact for failed deliveries.}
-
-\item{max_age_hours}{Maximum release age, or \code{NULL} to leave freshness
-unmonitored.}
-
-\item{allow_empty}{Whether an empty candidate may be published.}
-
-\item{allow_extra}{Whether additional columns are permitted.}
-
-\item{operator}{Optional technical operator, distinct from business owner
-and producer.}
-
-\item{column_metadata}{Optional named lists for declared columns, such as
-\code{list(amount = list(description = "Order value", unit = "EUR"))}.}
-
-\item{governance}{Named metadata: steward, classification, pii, tags, glossary,
-retention, roles and sla. Descriptive policies are not automatically enforced.}
-
-\item{constraints}{Optional named lists per column. \code{nullable} overrides
-\code{required} (keys remain non-null), \code{min}/\code{max} are inclusive typed bounds,
-and \code{enum} declares allowed nonmissing values. These checks also support
-lazy tables. \code{timezone} requires an exact POSIXct timezone attribute;
-\code{precision} permits 0 to 6 decimal places (fractional seconds for POSIXct),
-with absolute tolerance \code{1e-8}. Timezone and precision require collected
-data and block on lazy tables. Missing values are handled by nullability.
-Currency and units remain descriptive \code{column_metadata}.}
+\item{...}{Deprecated legacy policy/metadata arguments. Use the composition
+functions instead; this compatibility path is removed on 2027-01-01.}
 }
 \value{
 A serializable contract specification.
 }
 \description{
-Describe the columns, keys and checks a delivered table must satisfy.
-Reuse the contract across deliveries with \code{\link[=dr_add_contract]{dr_add_contract()}} or \code{\link[=dr_validate]{dr_validate()}}.
+Declare columns and keys here. Add business metadata with \code{\link[=dr_contract_meta]{dr_contract_meta()}}
+and validation policy with \code{\link[=dr_contract_policy]{dr_contract_policy()}}. Attach to a product with
+\code{\link[=dr_add_contract]{dr_add_contract()}}. Construction does not read data.
 }
 \examples{
-contract <- dr_contract(
-  "orders", "1.0.0", "Analytics", "Order amounts", "One order",
-  c(order_id = "integer", amount = "numeric"), key = "order_id"
-)
-contract
-dr_contract(columns = c(amount = "numeric", status = "character"),
-  constraints = list(amount = list(min = 0, precision = 2),
-    status = list(enum = c("active", "paid"))),
-  column_metadata = list(amount = list(unit = "EUR")))
+dr_contract("orders", c(id = "integer", amount = "numeric"), key = "id") |>
+  dr_contract_meta(owner = "Analytics") |>
+  dr_contract_policy(allow_extra = TRUE)
 }

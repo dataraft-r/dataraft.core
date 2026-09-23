@@ -37,7 +37,7 @@ overriding defaults stored by \code{dr_product(execution = )}.}
 A run result. An exception on failure includes \code{condition$result}.
 }
 \description{
-Use \code{\link[=dr_trial]{dr_trial()}} to try a product without configured framework writers.
+Use \code{\link[=dr_run]{dr_run()}} to try a product without configured framework writers.
 \code{dr_run()} executes its full configuration, including targets and catalogs.
 \code{dr_publish()} adds a local lake target when none was supplied. A new folder
 uses DuckDB; an existing folder retains its saved backend. \code{\link[dataraft.lake:dr_target_lake]{dataraft.lake::dr_target_lake()}}

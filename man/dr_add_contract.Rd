@@ -47,7 +47,8 @@ An updated product specification, without executing checks.
 \description{
 The contract describes shape and keys; quality rules describe acceptable
 values. Checks apply after preparation and gate framework writers.
-Adding a contract replaces the previous contract. Quality rules accumulate.
+Adding a contract replaces the previous contract; \code{NULL} removes it.
+Quality rules accumulate.
 }
 \examples{
 dr_product("orders") |>

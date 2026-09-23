@@ -2,10 +2,10 @@
 #'
 #' Define a data delivery by name, its expected columns and its quality rules.
 #' A product is a reusable specification. Bind a source with [dr_add_source()],
-#' or supply data when executing a workflow. Use [dr_trial()] before writing.
+#' or supply data when executing a workflow. Use [dr_run()] before writing.
 #'
 #' Add named sources, ordinary transformation functions and optional checks or
-#' a target. Use [dr_trial()] to try it, or [dr_publish()] to save checked output.
+#' a target. Use [dr_run()] to try it, or [dr_publish()] to save checked output.
 #' [dr_run()] executes the full configuration, including writers. Products can be
 #' sources of other products; shared dependencies run once per execution.
 #'
@@ -39,7 +39,7 @@
 #' orders <- dr_product("orders", data.frame(id = 1:2, amount = c(25, 75))) |>
 #'   dplyr::mutate(amount = round(amount, 2)) |>
 #'   dr_add_quality(~ amount >= 0)
-#' orders |> dr_trial() |> dr_collect()
+#' orders |> dr_run(write = FALSE, stop_on_failure = FALSE) |> dr_collect()
 
 dr_product <- function(
   id,
@@ -132,7 +132,7 @@ dr_product <- function(
 #'   row.names = FALSE)
 #' source <- dr_source_file("orders.file", path, reader = utils::read.csv)
 #' contract <- dr_contract(
-#'   "orders", "1.0.0", "Analytics", "Order amounts", "One order",
+#'   "orders", version = "1.0.0", columns =
 #'   c(order_id = "integer", amount = "numeric"), key = "order_id"
 #' )
 #' release <- dr_product("orders", contract = contract, code_version = "v1") |>

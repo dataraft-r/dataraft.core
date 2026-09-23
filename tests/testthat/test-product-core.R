@@ -96,7 +96,6 @@ test_that("capabilities use one stable shape and explain materialization", {
     "write",
     "lazy",
     "transactions",
-    "partition",
     "immutable"
   )
   expect_named(dr_capabilities(identity), expected)

@@ -51,10 +51,10 @@ test_that("formula engines propagate through contracts and lookup dependencies",
     "pointblank"
   )
   explicit <- definition |>
-    dr_add_lookup(data.frame(id = 1:2), by = "id", engine = "native")
+    dr_add_lookup(data.frame(id = 1:2), by = "id", engine = "dm")
   expect_identical(
     apply_execution_defaults(explicit, execution)$transforms[[2]]$engine,
-    "native"
+    "dm"
   )
 })
 

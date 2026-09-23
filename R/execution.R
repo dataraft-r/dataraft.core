@@ -102,7 +102,7 @@ dr_publish_metadata.default <- function(catalog, metadata, ...) {
 
 #' Execute and publish a product with sensible local defaults
 #'
-#' Use [dr_trial()] to try a product without configured framework writers.
+#' Use [dr_run()] to try a product without configured framework writers.
 #' `dr_run()` executes its full configuration, including targets and catalogs.
 #' `dr_publish()` adds a local lake target when none was supplied. A new folder
 #' uses DuckDB; an existing folder retains its saved backend. [dataraft.lake::dr_target_lake()]
@@ -224,16 +224,11 @@ collect.dr_product <- function(x, ...) {
   abort(
     c(
       "A product is a definition, not an executed result.",
-      i = "Run result <- dr_trial(x), then dr_collect(result). Add a source with dr_add_source() if needed."
+      i = "Run result <- dr_run(write = FALSE, stop_on_failure = FALSE, x), then dr_collect(result). Add a source with dr_add_source() if needed."
     ),
     subclass = "dataraft_error_definition"
   )
 }
-
-#' @rdname dr_collect
-#' @export
-collect.dr_product_workflow <- collect.dr_product
-
 
 #' @rdname dr_collect
 #' @export
@@ -289,6 +284,7 @@ dr_run.dr_product <- function(
   if (!is.null(.context)) {
     write <- .context$write
   }
+  withr::local_options(dataraft.verify_determinism = !write)
   if (!write) {
     evidence <- NULL
   }

@@ -37,7 +37,7 @@ its name, transformations and checks. If the primary input is a product,
 its single-primary-input chain is followed to the ordinary delivery,
 retaining every intermediate product and gate. Ambiguous branches require
 an explicit name through \code{sources}.
-\item \code{sources}: a named list of replacements using \code{\link[=dr_replace_sources]{dr_replace_sources()}} names.
+\item \code{sources}: a named list of replacements using \code{\link[=dr_set_sources]{dr_set_sources()}} names.
 Use either \code{data} or \code{sources}. The original definition and unselected
 pinned results remain unchanged. Both options replace whole inputs, not
 individual rows; partition replacement requires an explicit target policy.

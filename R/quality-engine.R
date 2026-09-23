@@ -1,3 +1,5 @@
+quality_determinism_cache <- new.env(parent = emptyenv())
+
 #' Evaluate an interchangeable quality rule
 #'
 #' Extension packages implement an S3 method for their rule class, inheriting
@@ -64,9 +66,23 @@ quality_formula_units <- function(data, predicate) {
 #' @export
 dr_run_quality.dr_rule <- function(rule, data, ...) {
   assert_stable_rule(rule)
+  key <- digest::digest(rule, algo = "sha256")
+  verify <- isTRUE(getOption("dataraft.verify_determinism", TRUE)) ||
+    !exists(key, quality_determinism_cache, inherits = FALSE)
+  remember <- function() {
+    if (!isTRUE(rule$volatile) && !isTRUE(rule$dynamic_reference)) {
+      if (length(quality_determinism_cache) >= 1000L) {
+        rm(
+          list = ls(quality_determinism_cache),
+          envir = quality_determinism_cache
+        )
+      }
+      assign(key, TRUE, envir = quality_determinism_cache)
+    }
+  }
   if (identical(rule$engine, "pointblank")) {
     out <- pointblank_results(rule, data, ...)
-    if (!isTRUE(rule$volatile) && !isTRUE(rule$dynamic_reference)) {
+    if (verify && !isTRUE(rule$volatile) && !isTRUE(rule$dynamic_reference)) {
       repeated <- pointblank_results(rule, data, ...)
       if (!identical(lapply(out, identity), lapply(repeated, identity))) {
         abort(
@@ -80,6 +96,7 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
       out$message <- "Volatile rule: outcome is not reusable evidence or an approval."
       out$status[out$status == "passed"] <- "warning"
     }
+    remember()
     return(out)
   }
   if (!identical(rule$engine, "r")) {
@@ -90,7 +107,7 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
   }
   if (inherits(rule$check, "formula")) {
     units <- quality_formula_units(data, rule$check)
-    if (!isTRUE(rule$volatile)) {
+    if (verify && !isTRUE(rule$volatile)) {
       repeated <- quality_formula_units(data, rule$check)
       if (!identical(dr_collect(units), dr_collect(repeated))) {
         abort(
@@ -117,7 +134,8 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
   } else {
     value <- rule$check(data)
     if (
-      !isTRUE(rule$volatile) &&
+      verify &&
+        !isTRUE(rule$volatile) &&
         !isTRUE(rule$dynamic_reference) &&
         !identical(value, rule$check(data))
     ) {
@@ -141,8 +159,8 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
       rule$name,
       value$n_failed,
       value$n_total,
-      rule$severity,
-      if (identical(rule$action, "quarantine")) 0 else rule$max_failure
+      if (identical(rule$action, "warn")) "warning" else "error",
+      if (identical(rule$action, "quarantine")) 0 else rule$threshold
     )
   } else {
     abort(
@@ -156,6 +174,7 @@ dr_run_quality.dr_rule <- function(rule, data, ...) {
     out$message <- "Volatile rule: outcome is not reusable evidence or an approval."
     if (out$status == "passed") out$status <- "warning"
   }
+  remember()
   out
 }
 
@@ -240,7 +259,7 @@ evaluate_rules <- function(
         quality_row(
           rule$name,
           "error",
-          rule$severity,
+          if (identical(rule$action, "warn")) "warning" else "error",
           message = "Rule execution failed. Inspect locally retained conditions with dr_quality_errors(result). Raw exception text is not exported.",
           engine = rule$engine %||% "custom"
         )

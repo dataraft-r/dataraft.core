@@ -1,9 +1,7 @@
 #' Define a modular product workflow or a delivery dependency graph
 #'
-#' Call `dr_workflow()` without step functions to start a modular assembly with
-#' [dr_add_product()], [dr_add_recipe()] and [dr_add_source()]. Bind data at definition
-#' time or with `dr_trial(flow, data = delivery)`. Use [dr_execution_config()] for
-#' optional engine defaults. Each component can be extracted or replaced.
+#' Empty modular workflows are deprecated: attach sources and recipes directly
+#' to [dr_product()]. The compatibility builder now returns an ordinary product.
 #'
 #' Named functions describe the receipt, preparation and dbt steps once.
 #' Each function argument names an input or another step. Steps execute in
@@ -26,16 +24,13 @@
 #' @param execution Optional connection-free [dr_execution_config()] for a modular
 #'   workflow. Function graphs configure execution inside their steps.
 #' @returns A workflow specification. Modular workflows return ordinary product
-#'   run results from [dr_trial()], [dr_run()] or [dr_publish()]. Function dependency
+#'   run results from [dr_run()], [dr_run()] or [dr_publish()]. Function dependency
 #'   graphs return named `results`, effective `inputs`, and a step `status` table.
 #' @export
 #' @examples
-#' spec <- dr_product("orders") |> dr_add_quality(~ amount >= 0)
-#' preparation <- dr_recipe() |> dr_step_mutate(amount = round(amount, 2))
-#' flow <- dr_workflow() |> dr_add_product(spec) |> dr_add_recipe(preparation)
-#' result <- dr_trial(flow, data = data.frame(amount = c(10.123, 20)))
-#' dr_collect(result)
-#' dr_extract_recipe(flow)
+#' flow <- dr_workflow(total = function(delivery) sum(delivery),
+#'   inputs = list(delivery = c(10, 20)), code_version = "v1")
+#' dr_run(flow)$results$total
 dr_workflow <- function(
   ...,
   inputs = list(),

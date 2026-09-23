@@ -7,11 +7,11 @@ test_that("native thresholds are evaluated independently for each pointblank seg
   data$amount[1:3] <- -1
   contract <- dr_contract(
     "amounts",
-    "1",
-    "Analytics",
-    "Amounts",
-    "One amount",
-    c(entity = "character", amount = "numeric"),
+    version = "1",
+    owner = "Analytics",
+    description = "Amounts",
+    grain = "One amount",
+    columns = c(entity = "character", amount = "numeric"),
     rules = list(
       dr_pointblank_checks(
         "positive",
@@ -71,11 +71,11 @@ test_that("native policy fails closed for inactive, errored and unconfigured che
   for (build in builders) {
     contract <- dr_contract(
       "x",
-      "1",
-      "Analytics",
-      "Values",
-      "One value",
-      c(x = "numeric"),
+      version = "1",
+      owner = "Analytics",
+      description = "Values",
+      grain = "One value",
+      columns = c(x = "numeric"),
       rules = list(dr_pointblank_checks("check", build, policy = "agent"))
     )
     quality <- dr_validate(data.frame(x = 1), contract)
@@ -88,11 +88,11 @@ test_that("rule policy remains independent of native action levels", {
   skip_if_not_installed("pointblank")
   contract <- dr_contract(
     "x",
-    "1",
-    "Analytics",
-    "Values",
-    "One value",
-    c(x = "numeric"),
+    version = "1",
+    owner = "Analytics",
+    description = "Values",
+    grain = "One value",
+    columns = c(x = "numeric"),
     rules = list(dr_pointblank_checks(
       "check",
       function(data) {
@@ -127,11 +127,11 @@ test_that("every native blocking action takes precedence across report layouts",
   )
   contract <- dr_contract(
     "amounts",
-    "1",
-    "Analytics",
-    "Amounts",
-    "One amount",
-    c(amount = "numeric"),
+    version = "1",
+    owner = "Analytics",
+    description = "Amounts",
+    grain = "One amount",
+    columns = c(amount = "numeric"),
     rules = list(dr_pointblank_checks(
       "positive",
       function(data) {

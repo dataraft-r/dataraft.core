@@ -138,8 +138,8 @@ metadata_filter <- function(lake, table, asset = NULL, run_id = NULL) {
 #' @seealso [dr_quality_report()], [dr_status()]
 #' @export
 #' @examples
-#' contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-#'   c(id = "integer"), key = "id")
+#' contract <- dr_contract("orders", version = "1",
+#'   columns = c(id = "integer"), key = "id")
 #' dr_quality(dr_validate(data.frame(id = c(1L, 1L)), contract))
 dr_quality <- function(
   x,

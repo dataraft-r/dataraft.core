@@ -1,3 +1,13 @@
+# dataraft.core 0.1.0.9005
+
+* The modular workflow wrapper is removed; the deprecated builder produces ordinary products.
+* `dr_contract()` now has five core arguments. Compose metadata and policy separately; legacy dots are deprecated.
+* `dr_quality_rule()` and pointblank specifications store action/threshold; severity/max_failure are deprecated.
+* `dr_run()` reuses a bounded session-local determinism verdict; dry runs always repeat checks.
+* `dr_set_sources()` replaces source CRUD exports, with NULL removal and explicit recursive graph editing.
+* `dr_trial()` is soft-deprecated and now raises on failure by default, like dr_run().
+* Lookup validation accepts only dm; unused partition capabilities are removed.
+
 # dataraft.core 0.1.0.9004
 
 * Mark inferred schema evidence unvalidated and freeze lazy candidates before generic writes.

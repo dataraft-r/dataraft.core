@@ -12,7 +12,7 @@ test_that("recipes materialize the checked result before publication", {
         dr_step_filter(id > 1) |>
         dr_step_mutate(amount = amount * 2)
     )
-  result <- dr_trial(flow)
+  result <- dr_run(write = FALSE, stop_on_failure = FALSE, flow)
   expect_s3_class(result$data, "data.frame")
   expect_equal(dr_collect(result)$amount, c(4, 6))
   expect_identical(DBI::dbIsValid(con), TRUE)

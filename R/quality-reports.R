@@ -13,8 +13,8 @@
 #' @seealso [dr_pointblank_report()], [dr_expect_quality()]
 #' @export
 #' @examples
-#' contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-#'   c(id = "integer"), key = "id")
+#' contract <- dr_contract("orders", version = "1",
+#'   columns = c(id = "integer"), key = "id")
 #' quality <- dr_validate(data.frame(id = c(1L, 1L)), contract)
 #' path <- tempfile(fileext = ".html")
 #' dr_quality_report(quality, path)
@@ -216,8 +216,8 @@ report_file <- function(path, overwrite, write) {
 #' @returns The normalized output path, invisibly.
 #' @export
 #' @examplesIf requireNamespace("pointblank", quietly = TRUE)
-#' contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-#'   c(amount = "numeric"), rules = list(dr_pointblank_checks("amounts", function(data) {
+#' contract <- dr_contract("orders", version = "1", owner = "Analytics", description = "Orders", grain = "One order",
+#'   columns = c(amount = "numeric"), rules = list(dr_pointblank_checks("amounts", function(data) {
 #'     pointblank::create_agent(data) |>
 #'       pointblank::col_vals_gte("amount", 0)
 #'   })))
@@ -255,8 +255,8 @@ dr_pointblank_report <- function(x, rule, path, overwrite = FALSE) {
 #' @returns `x`, invisibly, after recording a testthat expectation.
 #' @export
 #' @examplesIf requireNamespace("testthat", quietly = TRUE)
-#' contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-#'   c(id = "integer"), key = "id")
+#' contract <- dr_contract("orders", version = "1",
+#'   columns = c(id = "integer"), key = "id")
 #' dr_expect_quality(dr_validate(data.frame(id = 1:2), contract))
 dr_expect_quality <- function(x) {
   need("testthat")

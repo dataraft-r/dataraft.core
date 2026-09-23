@@ -42,14 +42,12 @@ workflow. Function graphs configure execution inside their steps.}
 }
 \value{
 A workflow specification. Modular workflows return ordinary product
-run results from \code{\link[=dr_trial]{dr_trial()}}, \code{\link[=dr_run]{dr_run()}} or \code{\link[=dr_publish]{dr_publish()}}. Function dependency
+run results from \code{\link[=dr_run]{dr_run()}}, \code{\link[=dr_run]{dr_run()}} or \code{\link[=dr_publish]{dr_publish()}}. Function dependency
 graphs return named \code{results}, effective \code{inputs}, and a step \code{status} table.
 }
 \description{
-Call \code{dr_workflow()} without step functions to start a modular assembly with
-\code{\link[=dr_add_product]{dr_add_product()}}, \code{\link[=dr_add_recipe]{dr_add_recipe()}} and \code{\link[=dr_add_source]{dr_add_source()}}. Bind data at definition
-time or with \code{dr_trial(flow, data = delivery)}. Use \code{\link[=dr_execution_config]{dr_execution_config()}} for
-optional engine defaults. Each component can be extracted or replaced.
+Empty modular workflows are deprecated: attach sources and recipes directly
+to \code{\link[=dr_product]{dr_product()}}. The compatibility builder now returns an ordinary product.
 }
 \details{
 Named functions describe the receipt, preparation and dbt steps once.
@@ -67,10 +65,7 @@ This is sequential orchestration, not a scheduler or a distributed transaction.
 Already committed steps stay committed if a later step fails.
 }
 \examples{
-spec <- dr_product("orders") |> dr_add_quality(~ amount >= 0)
-preparation <- dr_recipe() |> dr_step_mutate(amount = round(amount, 2))
-flow <- dr_workflow() |> dr_add_product(spec) |> dr_add_recipe(preparation)
-result <- dr_trial(flow, data = data.frame(amount = c(10.123, 20)))
-dr_collect(result)
-dr_extract_recipe(flow)
+flow <- dr_workflow(total = function(delivery) sum(delivery),
+  inputs = list(delivery = c(10, 20)), code_version = "v1")
+dr_run(flow)$results$total
 }
