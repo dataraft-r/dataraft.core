@@ -177,7 +177,7 @@ dr_contract_confirm <- function(contract) {
   args <- unclass(contract)
   args[c("draft", "kind")] <- NULL
   args$columns <- unlist(args$columns, use.names = TRUE)
-  do.call(dr_contract, args)
+  do.call(new_contract, args)
 }
 
 
@@ -209,10 +209,10 @@ assert_contract_ready <- function(contract) {
 #' @returns A tibble with `field`, `before`, `after` and `breaking`.
 #' @export
 #' @examples
-#' old <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-#'   c(id = "integer"), key = "id")
-#' new <- dr_contract("orders", "2", "Analytics", "Orders", "One order",
-#'   c(id = "integer", amount = "numeric"), key = "id")
+#' old <- dr_contract("orders", version = "1",
+#'   columns = c(id = "integer"), key = "id")
+#' new <- dr_contract("orders", version = "2",
+#'   columns = c(id = "integer", amount = "numeric"), key = "id")
 #' dr_contract_diff(old, new)
 dr_contract_diff <- function(old, new) {
   if (!inherits(old, "dr_contract") || !inherits(new, "dr_contract")) {

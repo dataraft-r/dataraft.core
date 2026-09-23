@@ -12,8 +12,8 @@ test_that("preferred quality terms preserve legacy gate semantics and reject amb
     action = "warn",
     threshold = .1
   )
-  expect_identical(preferred$severity, legacy$severity)
-  expect_identical(preferred$max_failure, legacy$max_failure)
+  expect_identical(preferred$action, legacy$action)
+  expect_identical(preferred$threshold, legacy$threshold)
   expect_identical(preferred$check, legacy$check)
   expect_identical(preferred$action, "warn")
   expect_error(
@@ -38,5 +38,4 @@ test_that("preferred quality terms preserve legacy gate semantics and reject amb
     threshold = .1
   )
   expect_identical(quarantined$action, "quarantine")
-  expect_identical(quarantined$severity, "error")
 })

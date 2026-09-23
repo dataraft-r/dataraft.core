@@ -33,8 +33,8 @@ are collected. The HTML is self-contained, escapes cell contents and displays
 status as text. An empty result is explicitly reported as not checked.
 }
 \examples{
-contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-  c(id = "integer"), key = "id")
+contract <- dr_contract("orders", version = "1",
+  columns = c(id = "integer"), key = "id")
 quality <- dr_validate(data.frame(id = c(1L, 1L)), contract)
 path <- tempfile(fileext = ".html")
 dr_quality_report(quality, path)

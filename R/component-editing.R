@@ -1,29 +1,3 @@
-#' Revise or replace a contract without executing it
-#'
-#' For a standalone contract, supply named revision arguments in `...`, such as
-#' `version`, `columns` or `rules`. The identity/version and guarantee-review
-#' checks of [dr_contract_update()] apply. This is the preferred verb spelling;
-#' `dr_contract_update()` is a deprecated compatibility name.
-#'
-#' For a product or workflow, `contract` replaces its existing attached contract.
-#' To revise that specification instead, extract it, revise its version, then
-#' attach it. Removal is idempotent and restores automatic structure inference;
-#' additional product quality rules remain attached. Extraction fails when no
-#' contract is attached. These functions never read sources or evaluate rules.
-#' @param x A contract, product, or modular workflow for updating; a product or
-#'   modular workflow for extraction and removal.
-#' @param contract Replacement contract, named type vector or prototype list.
-#'   Only used when `x` is a product or workflow.
-#' @param ... Named revision arguments of [dr_contract_update()].
-#' @returns An updated definition, or the extracted contract specification.
-#' @export
-#' @examples
-#' spec <- dr_contract("orders", columns = c(id = "integer"))
-#' revised <- dr_update_contract(spec, version = "2", columns = c(total = "numeric"))
-#' product <- dr_product("orders") |> dr_add_contract(spec)
-#' product <- dr_update_contract(product, revised)
-#' dr_extract_contract(product)
-#' dr_remove_contract(product)
 dr_update_contract <- function(x, contract = NULL, ...) {
   if (inherits(x, "dr_contract")) {
     if (!is.null(contract)) {
@@ -45,12 +19,7 @@ dr_update_contract <- function(x, contract = NULL, ...) {
   dr_add_contract(x, contract)
 }
 
-#' @rdname dr_update_contract
-#' @export
 dr_extract_contract <- function(x) {
-  if (inherits(x, "dr_product_workflow")) {
-    x <- dr_extract_product(x)
-  }
   x <- editable_product(x)
   if (is.null(x$contract)) {
     abort(
@@ -61,46 +30,18 @@ dr_extract_contract <- function(x) {
   x$contract
 }
 
-#' @rdname dr_update_contract
-#' @export
 dr_remove_contract <- function(x) {
-  if (inherits(x, "dr_product_workflow")) {
-    x$product <- dr_remove_contract(dr_extract_product(x))
-    check_workflow_slots(x)
-    return(x)
-  }
   x <- editable_product(x)
   x$contract <- NULL
   x
 }
 
-#' Edit named primary sources without reading them
-#'
-#' Updating requires an existing source. Extraction returns its stored adapter,
-#' function or data frame, never its executed result. If `name` is omitted,
-#' exactly one source must exist. Removing an explicitly named absent source is
-#' idempotent. Only sources owned by `x` are edited: extract the product first to
-#' edit sources attached to a workflow's product. Lookup dependencies remain in
-#' their recipe steps and are not primary source slots.
-#' @param x A product or modular workflow definition.
-#' @param source Replacement data frame, path, function or source adapter.
-#' @param name Existing primary source name, or NULL for the only source.
-#' @param reader Optional file reader, as in [dr_add_source()].
-#' @returns An updated definition, or the extracted source specification.
-#' @export
-#' @examples
-#' product <- dr_product("orders") |>
-#'   dr_add_source(data.frame(id = 1L), name = "delivery")
-#' dr_update_source(product, data.frame(id = 2L)) |> dr_extract_source()
-#' dr_remove_source(product, "delivery")
 dr_update_source <- function(x, source, name = NULL, reader = NULL) {
   name <- primary_source_name(x, name)
   dr_extract_source(x, name)
   dr_add_source(x, source, name = name, reader = reader, replace = TRUE)
 }
 
-#' @rdname dr_update_source
-#' @export
 dr_extract_source <- function(x, name = NULL) {
   name <- primary_source_name(x, name)
   if (!name %in% names(x$sources)) {
@@ -112,24 +53,15 @@ dr_extract_source <- function(x, name = NULL) {
   x$sources[[name]]
 }
 
-#' @rdname dr_update_source
-#' @export
 dr_remove_source <- function(x, name = NULL) {
   name <- primary_source_name(x, name)
-  if (!inherits(x, "dr_product_workflow")) {
-    x <- editable_product(x)
-  }
+  x <- editable_product(x)
   x$sources[[name]] <- NULL
-  if (inherits(x, "dr_product_workflow")) {
-    check_workflow_slots(x)
-  }
   x
 }
 
 primary_source_name <- function(x, name) {
-  if (!inherits(x, "dr_product_workflow")) {
-    editable_product(x)
-  }
+  editable_product(x)
   if (is.null(name)) {
     if (length(x$sources) != 1L) {
       abort(
@@ -141,4 +73,60 @@ primary_source_name <- function(x, name) {
   }
   scalar(name, "name")
   name
+}
+
+
+#' Set or remove primary product sources
+#'
+#' Named inputs replace or add primary sources. A named `NULL` removes one;
+#' `sources = NULL` clears all inputs. This edits definitions without I/O.
+#' Read the stored definitions with `product$sources`.
+#' @param x Product or modular workflow definition.
+#' @param ... Named source values; use adapters for explicit readers.
+#' @param sources Optional complete named source list, or NULL to clear it.
+#' @param .recursive Replace named deliveries in a dependency graph instead of
+#'   primary slots. This also supports managed dbt source bindings; NULL is not
+#'   a valid recursive delivery. Existing targets and checks are preserved.
+#' @returns An updated definition.
+#' @export
+#' @examples
+#' dr_product("orders") |> dr_set_sources(delivery = data.frame(id = 1L)) |>
+#'   dr_set_sources(delivery = NULL)
+dr_set_sources <- function(x, ..., sources, .recursive = FALSE) {
+  flag(.recursive, ".recursive")
+  if (.recursive) {
+    if (!missing(sources)) {
+      abort("Use named deliveries for recursive replacement.")
+    }
+    return(replace_sources_list(x, list(...)))
+  }
+  values <- list(...)
+  if (!missing(sources)) {
+    if (length(values)) {
+      abort("Use sources or named inputs, not both.")
+    }
+    if (!is.null(sources) && !is.list(sources)) {
+      abort("sources must be a named list or NULL.")
+    }
+    values <- sources %||% list()
+    x$sources <- list()
+  }
+  x <- editable_product(x)
+  if (
+    length(values) &&
+      (is.null(names(values)) ||
+        anyNA(names(values)) ||
+        any(!nzchar(names(values))) ||
+        anyDuplicated(names(values)))
+  ) {
+    abort("Supply uniquely named sources.", subclass = "dataraft_error_source")
+  }
+  for (name in names(values)) {
+    if (is.null(values[[name]])) {
+      x$sources[[name]] <- NULL
+    } else {
+      x <- dr_add_source(x, values[[name]], name = name, replace = TRUE)
+    }
+  }
+  x
 }

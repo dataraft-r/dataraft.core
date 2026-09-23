@@ -7,7 +7,7 @@
 #' unchanged. Expressions use dplyr data masking and retain their environments.
 #'
 #' These are data preparation instructions, not fitted preprocessing models.
-#' There is no training or implicit `prep()`/`bake()` phase. Use [dr_trial()] on
+#' There is no training or implicit `prep()`/`bake()` phase. Use [dr_run()] on
 #' the assembled workflow to inspect checked output, then [dr_publish()] to save it.
 #' @returns A recipe specification.
 #' @export
@@ -17,7 +17,7 @@
 #'   dr_step_filter(amount >= 0)
 #' dr_product("orders", data.frame(amount = c(10.123, 20))) |>
 #'   dr_add_recipe(preparation) |>
-#'   dr_trial() |>
+#'   dr_run(write = FALSE, stop_on_failure = FALSE) |>
 #'   dr_collect()
 dr_recipe <- function() {
   structure(list(steps = list()), class = "dr_recipe")

@@ -1,63 +1,56 @@
-#' Define a data contract
+#' Define the shape and identity of a data contract
 #'
-#' Describe the columns, keys and checks a delivered table must satisfy.
-#' Reuse the contract across deliveries with [dr_add_contract()] or [dr_validate()].
-#' @param id Optional contract identifier. An unnamed contract is scoped to
-#'   the product when added with [dr_add_contract()].
+#' Declare columns and keys here. Add business metadata with [dr_contract_meta()]
+#' and validation policy with [dr_contract_policy()]. Attach to a product with
+#' [dr_add_contract()]. Construction does not read data.
+#' @param id Contract identifier; omitted identifiers are scoped to their product.
+#' @param columns Named R type vector, or named list of zero-length prototypes.
+#' @param key Unique, non-null key columns.
+#' @param rules Quality rules or named row predicates.
 #' @param version Immutable definition version.
-#' @param owner Optional business owner.
-#' @param description Optional business description.
-#' @param grain Optional meaning of one row.
-#' @param columns Named character vector of R types: character, integer,
-#'   numeric, logical, Date, POSIXct, integer64 or list. A named list of
-#'   zero-length prototypes such as `list(id = integer(), amount = double())`
-#'   is also accepted. Factors describe character labels: validation preserves
-#'   factors in memory, but database storage need not preserve levels or order.
-#'   Integer64 columns remain distinct from doubles; no numeric conversion is
-#'   performed. Caller-owned DuckDB connections must use
-#'   `DBI::dbConnect(duckdb::duckdb(), bigint = "integer64")` to preserve them.
-#'   List columns require a target that supports nested data. `numeric` accepts
-#'   plain integer and double vectors; `integer` accepts only integer vectors.
-#'   `POSIXct` checks the class, not timezone or fractional-second precision.
-#'   Lazy tables use the driver's zero-row prototype for type checks. Use
-#'   `required` for nullability and `rules` for ranges and enum membership;
-#'   units and currency in `column_metadata` are descriptive, not enforced.
-#' @param required Non-null columns.
-#' @param key Unique key columns.
-#' @param rules A quality rule, one-sided formula, or list of rules/formulas.
-#'   List names label rules, with the same grammar as [dr_add_quality()].
-#' @param producer Contact for failed deliveries.
-#' @param max_age_hours Maximum release age, or `NULL` to leave freshness
-#'   unmonitored.
-#' @param allow_empty Whether an empty candidate may be published.
-#' @param allow_extra Whether additional columns are permitted.
-#' @param operator Optional technical operator, distinct from business owner
-#'   and producer.
-#' @param column_metadata Optional named lists for declared columns, such as
-#'   `list(amount = list(description = "Order value", unit = "EUR"))`.
-#' @param constraints Optional named lists per column. `nullable` overrides
-#'   `required` (keys remain non-null), `min`/`max` are inclusive typed bounds,
-#'   and `enum` declares allowed nonmissing values. These checks also support
-#'   lazy tables. `timezone` requires an exact POSIXct timezone attribute;
-#'   `precision` permits 0 to 6 decimal places (fractional seconds for POSIXct),
-#'   with absolute tolerance `1e-8`. Timezone and precision require collected
-#'   data and block on lazy tables. Missing values are handled by nullability.
-#'   Currency and units remain descriptive `column_metadata`.
-#' @param governance Named metadata: steward, classification, pii, tags, glossary,
-#'   retention, roles and sla. Descriptive policies are not automatically enforced.
-#' @return A serializable contract specification.
+#' @param ... Deprecated legacy policy/metadata arguments. Use the composition
+#'   functions instead; this compatibility path is removed on 2027-01-01.
+#' @returns A serializable contract specification.
 #' @export
 #' @examples
-#' contract <- dr_contract(
-#'   "orders", "1.0.0", "Analytics", "Order amounts", "One order",
-#'   c(order_id = "integer", amount = "numeric"), key = "order_id"
-#' )
-#' contract
-#' dr_contract(columns = c(amount = "numeric", status = "character"),
-#'   constraints = list(amount = list(min = 0, precision = 2),
-#'     status = list(enum = c("active", "paid"))),
-#'   column_metadata = list(amount = list(unit = "EUR")))
+#' dr_contract("orders", c(id = "integer", amount = "numeric"), key = "id") |>
+#'   dr_contract_meta(owner = "Analytics") |>
+#'   dr_contract_policy(allow_extra = TRUE)
 dr_contract <- function(
+  id = "contract",
+  columns,
+  key = character(),
+  rules = list(),
+  version = "1.0.0",
+  ...
+) {
+  anonymous <- missing(id)
+  legacy <- list(...)
+  if (length(legacy)) {
+    lifecycle::deprecate_soft(
+      "0.1.0.9005",
+      "dr_contract(...)",
+      details = "Use dr_contract_meta() and dr_contract_policy() for metadata and policy."
+    )
+  }
+  out <- do.call(
+    new_contract,
+    c(
+      list(
+        id = id,
+        columns = columns,
+        key = key,
+        rules = rules,
+        version = version
+      ),
+      legacy
+    )
+  )
+  attr(out, "dr_anonymous") <- if (anonymous) TRUE else NULL
+  out
+}
+
+new_contract <- function(
   id = "contract",
   version = "1.0.0",
   owner = "",
@@ -76,6 +69,7 @@ dr_contract <- function(
   governance = list(),
   constraints = list()
 ) {
+  rlang::local_error_call(rlang::caller_env())
   anonymous <- missing(id)
   if (
     !is.list(governance) ||
@@ -243,10 +237,10 @@ dr_contract <- function(
 #' @param severity Compatibility argument: `"error"` corresponds to
 #'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
 #'   for new `dr_quality_rule()` definitions. Supplying both is an error.
-#'   `dr_pointblank_checks()` continues to use `severity`.
+#'   Deprecated since 0.1.0.9005; use `action` for every engine.
 #' @param max_failure Compatibility argument for `threshold`. Prefer `threshold`
 #'   for new `dr_quality_rule()` definitions. Supplying both is an error.
-#'   `dr_pointblank_checks()` continues to use `max_failure`.
+#'   Deprecated since 0.1.0.9005. Both names denote a fraction, never a row count.
 #' @param description Rule description.
 #' @param engine Formula evaluation engine: `"native"` (default) or optional
 #'   `"pointblank"`. Both require logical row predicates and count missing
@@ -254,7 +248,7 @@ dr_contract <- function(
 #'   normalized predicate, retaining its reports and check evidence. Ordinary
 #'   functions use the native engine; use [dr_pointblank_checks()] for custom agents.
 #' @param build Function creating a pointblank agent from a lazy table.
-#' @param policy `"rule"` preserves the explicit `severity` / `max_failure`
+#' @param policy `"rule"` preserves the explicit `action` / `threshold`
 #'   gate. `"agent"` uses pointblank's per-step action levels: warnings permit
 #'   publication, stop/error and critical states block. Native pointblank
 #'   threshold rounding applies. An unconfigured, inactive or errored agent
@@ -272,8 +266,8 @@ dr_contract <- function(
 dr_quality_rule <- function(
   name = NULL,
   check = NULL,
-  severity = c("error", "warning"),
-  max_failure = 0,
+  severity = lifecycle::deprecated(),
+  max_failure = lifecycle::deprecated(),
   description = "",
   engine = c("native", "pointblank"),
   action = NULL,
@@ -282,19 +276,34 @@ dr_quality_rule <- function(
   volatile = FALSE
 ) {
   flag(volatile, "volatile")
-  if (!is.null(action)) {
-    action <- match.arg(action, c("block", "warn", "quarantine"))
-    if (!missing(severity)) {
+  if (lifecycle::is_present(severity)) {
+    if (!is.null(action)) {
       abort("Use action or severity, not both.")
     }
-    severity <- if (action == "warn") "warning" else "error"
+    lifecycle::deprecate_soft(
+      "0.1.0.9005",
+      "dr_quality_rule(severity)",
+      "dr_quality_rule(action)"
+    )
+    action <- if (match.arg(severity, c("error", "warning")) == "warning") {
+      "warn"
+    } else {
+      "block"
+    }
   }
-  if (!is.null(threshold)) {
-    if (!missing(max_failure)) {
+  if (lifecycle::is_present(max_failure)) {
+    if (!is.null(threshold)) {
       abort("Use threshold or max_failure, not both.")
     }
-    max_failure <- threshold
+    lifecycle::deprecate_soft(
+      "0.1.0.9005",
+      "dr_quality_rule(max_failure)",
+      "dr_quality_rule(threshold)"
+    )
+    threshold <- max_failure
   }
+  action <- match.arg(action %||% "block", c("block", "warn", "quarantine"))
+  threshold <- threshold %||% 0
   if (!is.null(dimension)) {
     dimension <- match.arg(
       dimension,
@@ -338,23 +347,22 @@ dr_quality_rule <- function(
     )
   }
   if (
-    !is.numeric(max_failure) ||
-      length(max_failure) != 1 ||
-      !is.finite(max_failure) ||
-      max_failure < 0 ||
-      max_failure > 1
+    !is.numeric(threshold) ||
+      length(threshold) != 1 ||
+      !is.finite(threshold) ||
+      threshold < 0 ||
+      threshold > 1
   ) {
     abort(
       subclass = "dataraft_error_contract",
-      "max_failure must be between 0 and 1."
+      "threshold must be between 0 and 1."
     )
   }
   structure(
     list(
       name = name,
       check = check,
-      severity = match.arg(severity),
-      max_failure = max_failure,
+      threshold = threshold,
       description = description,
       engine = engine,
       engine_explicit = engine_explicit,
@@ -393,11 +401,54 @@ dr_quality_counts <- function(n_failed, n_total) {
 dr_pointblank_checks <- function(
   name,
   build,
-  severity = c("error", "warning"),
-  max_failure = 0,
-  policy = c("rule", "agent")
+  severity = lifecycle::deprecated(),
+  max_failure = lifecycle::deprecated(),
+  policy = c("rule", "agent"),
+  action = NULL,
+  threshold = NULL,
+  volatile = FALSE
 ) {
-  rule <- dr_quality_rule(name, build, severity, max_failure)
+  args <- list(
+    name = name,
+    check = build,
+    action = action,
+    threshold = threshold,
+    volatile = volatile
+  )
+  if (lifecycle::is_present(severity)) {
+    lifecycle::deprecate_soft(
+      "0.1.0.9005",
+      "dr_pointblank_checks(severity)",
+      "dr_pointblank_checks(action)"
+    )
+    if (!is.null(action)) {
+      abort("Use action or severity, not both.")
+    }
+    args$action <- if (
+      match.arg(severity, c("error", "warning")) == "warning"
+    ) {
+      "warn"
+    } else {
+      "block"
+    }
+  }
+  if (lifecycle::is_present(max_failure)) {
+    lifecycle::deprecate_soft(
+      "0.1.0.9005",
+      "dr_pointblank_checks(max_failure)",
+      "dr_pointblank_checks(threshold)"
+    )
+    if (!is.null(threshold)) {
+      abort("Use threshold or max_failure, not both.")
+    }
+    args$threshold <- max_failure
+  }
+  if (identical(args$action, "quarantine")) {
+    abort(
+      "Pointblank agents support block or warn; quarantine requires a native row formula."
+    )
+  }
+  rule <- do.call(dr_quality_rule, args)
   rule$engine <- "pointblank"
   rule$engine_explicit <- TRUE
   policy <- match.arg(policy)
@@ -526,7 +577,7 @@ pointblank_results <- function(rule, data, keep_agent = FALSE) {
     return(quality_row(
       rule$name,
       "not_checked",
-      rule$severity,
+      if (identical(rule$action, "warn")) "warning" else "error",
       message = "Empty pointblank plan.",
       engine = "pointblank"
     ))
@@ -538,7 +589,7 @@ pointblank_results <- function(rule, data, keep_agent = FALSE) {
       return(quality_row(
         name,
         "not_checked",
-        rule$severity,
+        if (identical(rule$action, "warn")) "warning" else "error",
         message = "Inactive pointblank step."
       ))
     }
@@ -546,7 +597,7 @@ pointblank_results <- function(rule, data, keep_agent = FALSE) {
       return(quality_row(
         name,
         "error",
-        rule$severity,
+        if (identical(rule$action, "warn")) "warning" else "error",
         message = "pointblank evaluation did not complete cleanly."
       ))
     }
@@ -554,8 +605,8 @@ pointblank_results <- function(rule, data, keep_agent = FALSE) {
       name,
       as.numeric(row$units - row$n_pass),
       as.numeric(row$units),
-      rule$severity,
-      rule$max_failure
+      if (identical(rule$action, "warn")) "warning" else "error",
+      rule$threshold
     )
     if (identical(rule$policy, "agent")) {
       warn <- if ("W" %in% names(row)) row$W[[1]] else NA
@@ -643,8 +694,8 @@ pointblank_results <- function(rule, data, keep_agent = FALSE) {
 #' @export
 #' @examples
 #' contract <- dr_contract(
-#'   "orders", "1.0.0", "Analytics", "Order amounts", "One order",
-#'   c(order_id = "integer", amount = "numeric"), key = "order_id"
+#'   "orders", version = "1.0.0",
+#'   columns = c(order_id = "integer", amount = "numeric"), key = "order_id"
 #' )
 #' dr_validate(data.frame(order_id = 1:2, amount = c(25, 75)), contract)
 dr_validate <- function(data, contract = NULL, ...) UseMethod("dr_validate")
@@ -846,7 +897,7 @@ quality_ok <- function(results) {
 #' @returns A named list of original R conditions, empty when none were retained.
 #' @export
 #' @examples
-#' contract <- dr_contract("example", columns = c(id = "integer"),
+#' contract <- dr_contract("example", c(id = "integer"),
 #'   rules = list(dr_quality_rule("broken", function(data) stop("Check configuration"))))
 #' quality <- dr_validate(data.frame(id = 1L), contract, keep_errors = TRUE)
 #' lapply(dr_quality_errors(quality), conditionMessage)

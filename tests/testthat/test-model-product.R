@@ -21,9 +21,11 @@ test_that("models reuse contracts and diagnose a named table", {
       )
     )
   )
-  good <- dr_trial(spec)
+  good <- dr_run(write = FALSE, stop_on_failure = FALSE, spec)
   expect_s3_class(dr_collect(good), "dm")
-  bad <- dr_trial(
+  bad <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
     spec,
     sources = list(
       policies = data.frame(policy = 1:2, id = 1:2, amount = c(-1, 20))
@@ -32,8 +34,20 @@ test_that("models reuse contracts and diagnose a named table", {
   expect_identical(bad$status, "blocked")
   expect_equal(dr_quality_rows(bad)$policy, 1L)
   expect_equal(dr_quality_rows(bad, "policies/positive")$amount, -1)
-  expect_equal(dr_collect(dr_trial(spec))$policies$amount, c(10, 20))
-  orphan <- dr_trial(spec, sources = list(customers = data.frame(id = 1L)))
+  expect_equal(
+    dr_collect(dr_run(
+      write = FALSE,
+      stop_on_failure = FALSE,
+      spec
+    ))$policies$amount,
+    c(10, 20)
+  )
+  orphan <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    spec,
+    sources = list(customers = data.frame(id = 1L))
+  )
   expect_identical(orphan$status, "blocked")
   expect_equal(tail(dr_quality(orphan)$status, 1), "failed")
 })
@@ -61,11 +75,15 @@ test_that("model publication pins all members and rejects stale correction", {
   expect_equal(dr_collect(first)$policies$amount, c(10, 20))
   expect_equal(dr_collect(second)$policies$amount, c(30, 40))
   expect_equal(
-    dr_collect(dr_trial(dr_product(
-      "selected",
-      first,
-      table = "policies"
-    )))$amount,
+    dr_collect(dr_run(
+      write = FALSE,
+      stop_on_failure = FALSE,
+      dr_product(
+        "selected",
+        first,
+        table = "policies"
+      )
+    ))$amount,
     c(10, 20)
   )
   error <- tryCatch(
@@ -206,10 +224,17 @@ test_that("nested member selections reuse the active publication connection", {
 
 test_that("model lookups use table names without an extra wrapper product", {
   skip_if_not_installed("dm")
-  checked <- dr_trial(dr_product("portfolio", model_fixture()))
+  checked <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_product("portfolio", model_fixture())
+  )
   selected <- dr_product("summary", checked, table = "policies") |>
     dr_add_lookup(checked, table = "customers", by = "id")
-  expect_equal(dr_collect(dr_trial(selected))$amount, c(10, 20))
+  expect_equal(
+    dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, selected))$amount,
+    c(10, 20)
+  )
   expect_equal(
     sort(names(delivery_aliases(selected))),
     c("customers", "summary")
@@ -219,7 +244,11 @@ test_that("model lookups use table names without an extra wrapper product", {
 test_that("a model never silently chooses a metric grain", {
   skip_if_not_installed("dataraft.metrics")
   skip_if_not_installed("dm")
-  result <- dr_trial(dr_product("portfolio", model_fixture()))
+  result <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_product("portfolio", model_fixture())
+  )
   error <- tryCatch(
     dr_measure(
       result,

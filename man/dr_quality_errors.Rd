@@ -24,7 +24,7 @@ reports. Trial results retain them automatically. Use \code{conditionMessage()}
 locally to inspect a missing column or another rule execution error.
 }
 \examples{
-contract <- dr_contract("example", columns = c(id = "integer"),
+contract <- dr_contract("example", c(id = "integer"),
   rules = list(dr_quality_rule("broken", function(data) stop("Check configuration"))))
 quality <- dr_validate(data.frame(id = 1L), contract, keep_errors = TRUE)
 lapply(dr_quality_errors(quality), conditionMessage)

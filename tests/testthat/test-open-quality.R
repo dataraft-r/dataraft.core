@@ -1,7 +1,7 @@
 test_that("quarantine partitions rows before the writer and preserves evidence", {
   product <- dr_product("orders", data.frame(amount = c(1, -1, NA))) |>
     dr_add_quality(~ amount >= 0, action = "quarantine")
-  result <- dr_trial(product)
+  result <- dr_run(write = FALSE, stop_on_failure = FALSE, product)
   expect_equal(dr_collect(result)$amount, 1)
   expect_equal(nrow(dr_quarantine_rows(result)), 2L)
   expect_true(any(result$quality$stage == "quarantine"))
@@ -9,11 +9,15 @@ test_that("quarantine partitions rows before the writer and preserves evidence",
     sum(result$quality$n_failed[result$quality$stage == "quarantine"]),
     2
   )
-  broken <- dr_trial(dr_add_quality(
-    dr_product("broken", data.frame(amount = 1)),
-    ~ amont > 0,
-    action = "quarantine"
-  ))
+  broken <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_add_quality(
+      dr_product("broken", data.frame(amount = 1)),
+      ~ amont > 0,
+      action = "quarantine"
+    )
+  )
   expect_false(broken$status %in% c("published", "completed"))
 })
 
@@ -44,7 +48,11 @@ test_that("unpartitioned quarantine never authorizes rejected rows", {
 
 test_that("plain console diagnostics remain readable with NO_COLOR", {
   withr::local_envvar(c(NO_COLOR = "1"))
-  result <- dr_trial(dr_product("orders", data.frame(id = 1L)))
+  result <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_product("orders", data.frame(id = 1L))
+  )
   output <- paste(capture.output(print(result)), collapse = "\n")
   expect_false(grepl("\033[", output, fixed = TRUE))
   expect_match(output, "completed")

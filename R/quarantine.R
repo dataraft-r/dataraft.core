@@ -38,7 +38,13 @@ prepare_quality_candidate <- function(data, contract) {
     }
     bad <- is.na(units) | !units
     rejected <- rejected | bad
-    item <- from_counts(rule$name, sum(bad), length(bad), rule$severity, 0)
+    item <- from_counts(
+      rule$name,
+      sum(bad),
+      length(bad),
+      if (identical(rule$action, "warn")) "warning" else "error",
+      0
+    )
     item$engine <- "r"
     if (any(bad)) {
       item$status <- "warning"

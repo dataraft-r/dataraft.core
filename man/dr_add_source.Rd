@@ -29,8 +29,8 @@ transformation that combines their named list before table operations.
 flow <- dr_workflow() |>
   dr_add_product(dr_product("orders")) |>
   dr_add_source(data.frame(id = 1:2, amount = c(25, 75)), name = "orders")
-dr_collect(dr_trial(flow))
+dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, flow))
 }
 \seealso{
-\code{\link[=dr_replace_sources]{dr_replace_sources()}}, \code{\link[dataraft.adapters:dr_source_database]{dataraft.adapters::dr_source_database()}}, \code{\link[=dr_trial]{dr_trial()}}
+\code{\link[=dr_set_sources]{dr_set_sources()}}, \code{\link[dataraft.adapters:dr_source_database]{dataraft.adapters::dr_source_database()}}, \code{\link[=dr_run]{dr_run()}}
 }

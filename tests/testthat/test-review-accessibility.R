@@ -37,7 +37,7 @@ test_that("formula shortcuts preserve scope and explicit names", {
 test_that("failed collection retains the result and local rule causes", {
   product <- dr_product("orders", data.frame(amount = 1)) |>
     dr_add_quality(~ amont >= 0)
-  result <- dr_trial(product)
+  result <- dr_run(write = FALSE, stop_on_failure = FALSE, product)
   err <- tryCatch(dr_collect(result), error = identity)
   expect_s3_class(err, "dataraft_error_quality")
   expect_identical(err$result, result)
@@ -57,7 +57,7 @@ test_that("failed collection retains the result and local rule causes", {
 test_that("raw rule exceptions stay out of exported quality evidence", {
   product <- dr_product("orders", data.frame(id = 1L)) |>
     dr_add_quality(function(data) stop("PRIVATE_PAYLOAD"), name = "broken")
-  result <- dr_trial(product)
+  result <- dr_run(write = FALSE, stop_on_failure = FALSE, product)
   expect_match(
     conditionMessage(dr_quality_errors(result)$broken),
     "PRIVATE_PAYLOAD"
@@ -81,17 +81,21 @@ test_that("definitions explain how to obtain data without executing sources", {
   })
   expect_error(
     dr_collect(product),
-    "dr_trial",
+    "dr_run",
     class = "dataraft_error_definition"
   )
-  expect_error(dr_collect(dr_workflow() |> dr_add_product(product)), "dr_trial")
+  expect_error(dr_collect(dr_workflow() |> dr_add_product(product)), "dr_run")
   expect_identical(calls, 0L)
 })
 
 test_that("nested failures expose retained upstream rule errors", {
   raw <- dr_product("raw", data.frame(amount = 1)) |>
     dr_add_quality(~ amont > 0)
-  result <- dr_trial(dr_product("prepared", raw))
+  result <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_product("prepared", raw)
+  )
   expect_match(conditionMessage(dr_quality_errors(result)[[1]]), "amont")
 })
 
@@ -102,11 +106,15 @@ test_that("model failures retain member exceptions and collection evidence", {
     columns = c(amount = "numeric"),
     rules = list(dr_quality_rule(~ amont > 0))
   )
-  result <- dr_trial(dr_product(
-    "model",
-    tables,
-    contracts = list(orders = contract)
-  ))
+  result <- dr_run(
+    write = FALSE,
+    stop_on_failure = FALSE,
+    dr_product(
+      "model",
+      tables,
+      contracts = list(orders = contract)
+    )
+  )
   err <- tryCatch(dr_collect(result), error = identity)
   expect_identical(err$result, result)
   expect_named(dr_quality_errors(err), "orders/amont > 0")

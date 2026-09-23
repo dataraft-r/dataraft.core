@@ -48,7 +48,7 @@ dr_read_source.example_source <- function(source, ...) {
 dr_inspect.example_source <- function(x, ...) list(type = "example", name = x$name)
 dr_capabilities.example_source <- function(x, ...) {
   dr_component_capabilities(read = TRUE, write = FALSE, lazy = FALSE,
-    transactions = FALSE, partition = FALSE, immutable = FALSE)
+    transactions = FALSE, immutable = FALSE)
 }
 for (generic in c("dr_check_component", "dr_read_source", "dr_inspect", "dr_capabilities")) {
   registerS3method(generic, "example_source",
@@ -74,7 +74,7 @@ dr_check_component.example_target <- dr_check_component.example_source
 dr_inspect.example_target <- dr_inspect.example_source
 dr_capabilities.example_target <- function(x, ...) {
   dr_component_capabilities(read = FALSE, write = TRUE, lazy = FALSE,
-    transactions = FALSE, partition = FALSE, immutable = FALSE)
+    transactions = FALSE, immutable = FALSE)
 }
 dr_write_target.example_target <- function(target, data, context, ...) {
   target$client[[target$name]] <- data
@@ -90,7 +90,7 @@ product <- dr_product("orders", source) |>
 result <- dr_publish(product)
 stopifnot(identical(client$checked$amount, c(10, 20)))
 client$orders$amount <- c(-1, 20)
-failed <- dr_trial(product)
+failed <- dr_run(write = FALSE, stop_on_failure = FALSE, product)
 stopifnot(failed$status == "blocked")
 try(dr_publish(product), silent = TRUE)
 stopifnot(identical(client$checked$amount, c(10, 20)))
@@ -102,7 +102,7 @@ invisible(dr_last_failure(clear = TRUE))
 Put methods in an R package importing `dataraft.core`. For each method, use
 roxygen `@export` and `@importFrom dataraft.core <generic>` so R registers it even
 when the package is loaded without attaching it. Test both direct protocol calls
-and a complete `dr_trial()` / `dr_publish()` workflow, including a blocked input
+and a complete `dr_run(write = FALSE, stop_on_failure = FALSE)` / `dr_publish()` workflow, including a blocked input
 and a failed write. Close only connections the adapter itself opened.
 
 Use the public protocols above. Names starting with `dr_internal_` are versioned

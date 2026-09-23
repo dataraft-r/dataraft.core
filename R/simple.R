@@ -45,7 +45,7 @@ automatic_types <- function(columns) {
 
 automatic_schema <- function(name, columns) {
   rlang::local_error_call(rlang::caller_env())
-  contract <- dr_contract(
+  contract <- new_contract(
     paste0(name, ".schema"),
     version = paste0("auto-", fingerprint(columns)),
     columns = columns,

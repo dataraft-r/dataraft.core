@@ -33,7 +33,7 @@ run_result <- function(run, status, release = NA_character_, quality = NULL) {
 #'   its single-primary-input chain is followed to the ordinary delivery,
 #'   retaining every intermediate product and gate. Ambiguous branches require
 #'   an explicit name through `sources`.
-#' * `sources`: a named list of replacements using [dr_replace_sources()] names.
+#' * `sources`: a named list of replacements using [dr_set_sources()] names.
 #'   Use either `data` or `sources`. The original definition and unselected
 #'   pinned results remain unchanged. Both options replace whole inputs, not
 #'   individual rows; partition replacement requires an explicit target policy.

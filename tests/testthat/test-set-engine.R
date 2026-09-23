@@ -24,7 +24,12 @@ test_that("reusable lookup specs retain dependency resolution", {
     dr_add_product(dr_product("orders")) |>
     dr_add_recipe(dr_recipe() |> dr_step_transform(lookup))
   expect_equal(
-    dr_collect(dr_trial(flow, data = data.frame(id = 1:2)))$label,
+    dr_collect(dr_run(
+      write = FALSE,
+      stop_on_failure = FALSE,
+      flow,
+      data = data.frame(id = 1:2)
+    ))$label,
     c("a", "b")
   )
 })

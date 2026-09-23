@@ -18,7 +18,7 @@ unchanged. Expressions use dplyr data masking and retain their environments.
 }
 \details{
 These are data preparation instructions, not fitted preprocessing models.
-There is no training or implicit \code{prep()}/\code{bake()} phase. Use \code{\link[=dr_trial]{dr_trial()}} on
+There is no training or implicit \code{prep()}/\code{bake()} phase. Use \code{\link[=dr_run]{dr_run()}} on
 the assembled workflow to inspect checked output, then \code{\link[=dr_publish]{dr_publish()}} to save it.
 }
 \examples{
@@ -27,6 +27,6 @@ preparation <- dr_recipe() |>
   dr_step_filter(amount >= 0)
 dr_product("orders", data.frame(amount = c(10.123, 20))) |>
   dr_add_recipe(preparation) |>
-  dr_trial() |>
+  dr_run(write = FALSE, stop_on_failure = FALSE) |>
   dr_collect()
 }

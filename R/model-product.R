@@ -70,7 +70,7 @@ dr_validate.dr_model_product <- function(
   ) {
     abort(
       subclass = "dataraft_error_definition",
-      "Configure checks and transformations on the model's table products. Select a table with dr_product(..., table = ) after dr_trial() or dr_publish()."
+      "Configure checks and transformations on the model's table products. Select a table with dr_product(..., table = ) after dr_run(write = FALSE, stop_on_failure = FALSE) or dr_publish()."
     )
   }
   if (
@@ -156,6 +156,7 @@ dr_run.dr_model_product <- function(
       "Replace model tables with sources = list(table_name = delivery)."
     )
   }
+  withr::local_options(dataraft.verify_determinism = !write)
   x <- pipeline
   if (!is.null(sources)) {
     x <- replace_sources_list(x, sources)
@@ -171,7 +172,9 @@ dr_run.dr_model_product <- function(
   result$asset <- x$id
   result$primary_keys <- x$primary_keys
   result$foreign_keys <- x$foreign_keys
-  result$members <- lapply(x$sources, function(member) dr_trial(member))
+  result$members <- lapply(x$sources, function(member) {
+    dr_run(write = FALSE, stop_on_failure = FALSE, member)
+  })
   checks <- lapply(names(result$members), function(name) {
     out <- dr_quality(result$members[[name]])
     out$rule <- paste(name, out$rule, sep = "/")
@@ -290,7 +293,7 @@ model_member_result <- function(x, table) {
   ) {
     abort(
       subclass = "dataraft_error_definition",
-      "Select a table from a successful dr_trial() or dr_publish() model result."
+      "Select a table from a successful dr_run(write = FALSE, stop_on_failure = FALSE) or dr_publish() model result."
     )
   }
   if (!table %in% names(x$members)) {

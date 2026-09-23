@@ -5,6 +5,7 @@
 #' contract still requires a new version before registration or publication.
 #' @param x Contract specification.
 #' @param required Non-null columns; keys always remain non-null.
+#' @param constraints Named per-column min, max, enum, nullable, timezone or precision checks.
 #' @param allow_empty,allow_extra Whether empty deliveries or extra columns are allowed.
 #' @param max_age_hours Freshness limit, or NULL for no freshness monitoring.
 #' @returns An updated contract specification.
@@ -17,21 +18,29 @@ dr_contract_policy <- function(
   required = x$required,
   allow_empty = x$allow_empty,
   allow_extra = x$allow_extra,
-  max_age_hours = x$max_age_hours
+  max_age_hours = x$max_age_hours,
+  constraints = x$constraints
 ) {
   if (!inherits(x, "dr_contract")) {
     abort("Supply a contract.", subclass = "dataraft_error_contract")
   }
-  checked <- dr_contract(
+  checked <- new_contract(
     x$id,
     columns = unlist(x$columns),
     key = x$key,
     required = required,
     allow_empty = allow_empty,
     allow_extra = allow_extra,
-    max_age_hours = max_age_hours
+    max_age_hours = max_age_hours,
+    constraints = constraints
   )
-  fields <- c("required", "allow_empty", "allow_extra", "max_age_hours")
+  fields <- c(
+    "required",
+    "allow_empty",
+    "allow_extra",
+    "max_age_hours",
+    "constraints"
+  )
   x[fields] <- checked[fields]
   x
 }
@@ -75,7 +84,7 @@ dr_contract_meta <- function(x, ...) {
     )
   }
   checked <- do.call(
-    dr_contract,
+    new_contract,
     c(list(id = x$id, columns = unlist(x$columns)), values)
   )
   x[names(values)] <- checked[names(values)]

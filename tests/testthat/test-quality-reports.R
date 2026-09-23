@@ -1,11 +1,11 @@
 test_that("reports escape metadata, expose the gate and never include retained agents", {
   contract <- dr_contract(
     "orders",
-    "1",
-    "Analytics",
-    "Orders",
-    "One order",
-    c(id = "integer"),
+    version = "1",
+    owner = "Analytics",
+    description = "Orders",
+    grain = "One order",
+    columns = c(id = "integer"),
     key = "id",
     rules = list(dr_quality_rule("<script>alert(1)</script>", function(data) {
       FALSE
@@ -31,11 +31,11 @@ test_that("native pointblank HTML can be exported from retained agents", {
   skip_if_not_installed("pointblank")
   contract <- dr_contract(
     "amounts",
-    "1",
-    "Analytics",
-    "Amounts",
-    "One amount",
-    c(amount = "numeric"),
+    version = "1",
+    owner = "Analytics",
+    description = "Amounts",
+    grain = "One amount",
+    columns = c(amount = "numeric"),
     rules = list(dr_pointblank_checks("positive", function(data) {
       pointblank::create_agent(data) |> pointblank::col_vals_gte("amount", 0)
     }))

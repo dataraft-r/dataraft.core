@@ -1,38 +1,3 @@
-#' Replace inputs without rebuilding a workflow
-#'
-#' Edits definitions only: no readers, transformations, connections or dbt
-#' commands run. Execute the returned definition with [dr_run()] or [dr_publish()],
-#' or rebuild its [dataraft.adapters::dr_as_targets()] graph to let targets cache unaffected products.
-#'
-#' For products, names select a delivery name shown by [dr_plan()] or a nested
-#' product ID. A product ID updates the ordinary delivery at the end of its
-#' single-primary-input chain, retaining every product's transforms, checks and
-#' target in every reference, including
-#' lookups. Products with multiple primary inputs need an explicit edited
-#' definition instead. A replacement product with the same ID explicitly
-#' replaces the whole definition. If a root alias also names that same product, the product
-#' ID interpretation applies. Other alias/ID collisions are rejected. Pinned
-#' results are not product definitions: they change only when their root source
-#' alias is explicitly selected. To change a deeper pinned input, replace its
-#' containing product with an edited definition. Overlapping edits that discard
-#' another requested replacement are rejected.
-#'
-#' For managed dbt projects, names select existing source table aliases. An alias
-#' appearing in more than one group is ambiguous; use `group.table` instead.
-#' Replacements must be successful immutable lake results in the same catalog.
-#' Unselected bindings retain their exact release IDs. Files are updated only
-#' when the project executes. External-profile projects are not supported.
-#'
-#' @param x A product or managed [dataraft.dbt::dr_dbt_project()] definition.
-#' @param ... Named replacement sources, using the same values as [dr_add_source()]
-#'   for products. For managed dbt, successful published lake results.
-#' @returns An updated definition of the same class as `x`.
-#' @export
-#' @examples
-#' orders <- dr_product("orders", data.frame(amount = 10))
-#' totals <- dr_product("totals", orders)
-#' corrected <- totals |> dr_replace_sources(orders = data.frame(amount = 20))
-#' corrected |> dr_run() |> dr_collect()
 dr_replace_sources <- function(x, ...) {
   replace_sources_list(x, list(...))
 }

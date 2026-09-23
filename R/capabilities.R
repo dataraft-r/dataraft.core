@@ -1,6 +1,6 @@
 #' Inspect adapter capabilities
 #'
-#' Adapters report the same six logical fields. `TRUE` means supported, `FALSE`
+#' Adapters report the same five logical fields. `TRUE` means supported, `FALSE`
 #' means unsupported, and `NA` means undeclared or dependent on user code.
 #' Capabilities describe behavior; they do not test remote permissions.
 #' Extension methods can use [dr_component_capabilities()] for a stable shape.
@@ -16,14 +16,14 @@ dr_capabilities <- function(x, ...) UseMethod("dr_capabilities")
 
 
 #' @rdname dr_capabilities
-#' @param read,write,lazy,transactions,partition,immutable Logical scalars.
+#' @param read,write,lazy,transactions,immutable Logical scalars.
 #' @export
 dr_component_capabilities <- function(
   read = NA,
   write = NA,
   lazy = NA,
   transactions = NA,
-  partition = NA,
+
   immutable = NA
 ) {
   values <- list(
@@ -31,7 +31,7 @@ dr_component_capabilities <- function(
     write = write,
     lazy = lazy,
     transactions = transactions,
-    partition = partition,
+
     immutable = immutable
   )
   if (
@@ -59,7 +59,7 @@ dr_capabilities.NULL <- function(x, ...) {
     write = TRUE,
     lazy = TRUE,
     transactions = FALSE,
-    partition = FALSE,
+
     immutable = FALSE
   )
 }
@@ -71,7 +71,7 @@ dr_capabilities.data.frame <- function(x, ...) {
     write = FALSE,
     lazy = FALSE,
     transactions = FALSE,
-    partition = FALSE,
+
     immutable = FALSE
   )
 }
@@ -93,7 +93,7 @@ dr_capabilities.dr_source <- function(x, ...) {
     write = FALSE,
     lazy = FALSE,
     transactions = FALSE,
-    partition = FALSE,
+
     immutable = FALSE
   )
 }

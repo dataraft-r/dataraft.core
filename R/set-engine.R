@@ -52,7 +52,7 @@ dr_set_engine.dr_rule <- function(x, engine, ...) {
 dr_set_engine.dr_lookup_transform <- function(x, engine, ...) {
   rlang::check_dots_empty()
   scalar(engine, "engine")
-  x$engine <- match.arg(engine, c("native", "dm"))
+  x$engine <- match.arg(engine, "dm")
   x$engine_explicit <- TRUE
   x
 }
@@ -74,7 +74,7 @@ dr_set_engine.dr_lookup_transform <- function(x, engine, ...) {
 #' @examples
 #' customers <- data.frame(id = 1:2, region = c("North", "South"))
 #' lookup <- dr_lookup_spec(customers, by = "id", name = "customers") |>
-#'   dr_set_engine("native")
+#'   dr_set_engine("dm")
 #' dr_recipe() |> dr_step_transform(lookup)
 dr_lookup_spec <- function(
   source,
@@ -111,10 +111,10 @@ print.dr_rule <- function(x, ...) {
   cat("<quality rule> ", x$name, "\n", sep = "")
   cat("Engine:", if (identical(x$engine, "r")) "native" else x$engine, "\n")
   cat(
-    "Severity:",
-    x$severity,
+    "Action:",
+    x$action,
     "| Allowed failure proportion:",
-    x$max_failure,
+    x$threshold,
     "\n"
   )
   invisible(x)

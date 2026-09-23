@@ -37,6 +37,6 @@ to select dm constraint checks, then attach it with
 \examples{
 customers <- data.frame(id = 1:2, region = c("North", "South"))
 lookup <- dr_lookup_spec(customers, by = "id", name = "customers") |>
-  dr_set_engine("native")
+  dr_set_engine("dm")
 dr_recipe() |> dr_step_transform(lookup)
 }

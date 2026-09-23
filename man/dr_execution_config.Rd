@@ -6,7 +6,7 @@
 \usage{
 dr_execution_config(
   quality = "native",
-  relationships = "native",
+  relationships = "dm",
   to = NULL,
   layer = NULL
 )

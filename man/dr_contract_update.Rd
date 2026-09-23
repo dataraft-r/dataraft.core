@@ -29,7 +29,7 @@ as in \code{\link[=dr_contract]{dr_contract()}}. Omit to retain the declared typ
 }
 \value{
 A new \code{contract} specification. Use \code{\link[=dr_contract_diff]{dr_contract_diff()}} to review it.
-This legacy name is retained for compatibility. Prefer \code{\link[=dr_update_contract]{dr_update_contract()}}
+This legacy name is retained for compatibility. Prefer \code{\link[=dr_contract_update]{dr_contract_update()}}
 in new code; argument positions and revision checks remain unchanged.
 }
 \description{

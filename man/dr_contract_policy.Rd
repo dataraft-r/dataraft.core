@@ -9,7 +9,8 @@ dr_contract_policy(
   required = x$required,
   allow_empty = x$allow_empty,
   allow_extra = x$allow_extra,
-  max_age_hours = x$max_age_hours
+  max_age_hours = x$max_age_hours,
+  constraints = x$constraints
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ dr_contract_policy(
 \item{allow_empty, allow_extra}{Whether empty deliveries or extra columns are allowed.}
 
 \item{max_age_hours}{Freshness limit, or NULL for no freshness monitoring.}
+
+\item{constraints}{Named per-column min, max, enum, nullable, timezone or precision checks.}
 }
 \value{
 An updated contract specification.

@@ -59,10 +59,7 @@ test_that("contract slots work on products and workflow products without executi
     dr_update_contract(product, revised, version = "3"),
     class = "rlib_error_dots_nonempty"
   )
-  expect_error(
-    dr_remove_contract(dr_workflow()),
-    class = "dataraft_error_definition"
-  )
+  expect_null(dr_remove_contract(dr_workflow())$contract)
 })
 
 test_that("named source edits are deferred, immutable and unambiguous", {
@@ -103,19 +100,14 @@ test_that("named source edits are deferred, immutable and unambiguous", {
   }
 })
 
-test_that("workflow source edits do not silently reach into product sources", {
+test_that("legacy builders expose the same primary source slots as products", {
   product <- dr_product("orders") |>
-    dr_add_source(data.frame(id = 1L), name = "delivery")
+    dr_set_sources(delivery = data.frame(id = 1L))
   flow <- dr_workflow() |> dr_add_product(product)
-  expect_error(
-    dr_update_source(flow, data.frame(id = 2L), "delivery"),
-    class = "dataraft_error_definition"
-  )
-  expect_identical(dr_remove_source(flow, "delivery"), flow)
-  expect_identical(
-    dr_extract_source(dr_extract_product(flow)),
-    data.frame(id = 1L)
-  )
+  changed <- dr_set_sources(flow, delivery = data.frame(id = 2L))
+  expect_equal(changed$sources$delivery$id, 2L)
+  expect_length(dr_set_sources(flow, delivery = NULL)$sources, 0L)
+  expect_equal(product$sources$delivery$id, 1L)
 })
 
 test_that("editing clears product preflight marks", {

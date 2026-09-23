@@ -3,15 +3,12 @@
 \name{dr_collect}
 \alias{dr_collect}
 \alias{collect.dr_product}
-\alias{collect.dr_product_workflow}
 \alias{collect.dr_run_result}
 \title{Collect the output of a successful run}
 \usage{
 dr_collect(x, ...)
 
 \method{collect}{dr_product}(x, ...)
-
-\method{collect}{dr_product_workflow}(x, ...)
 
 \method{collect}{dr_run_result}(x, ...)
 }

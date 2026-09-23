@@ -45,8 +45,8 @@ checks. These choices prevent an older successful run hiding a recent
 failure.
 }
 \examples{
-contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
-  c(id = "integer"), key = "id")
+contract <- dr_contract("orders", version = "1",
+  columns = c(id = "integer"), key = "id")
 dr_quality(dr_validate(data.frame(id = c(1L, 1L)), contract))
 }
 \seealso{

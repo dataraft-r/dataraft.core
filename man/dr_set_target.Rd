@@ -16,7 +16,7 @@ adapter. Use \code{\link[dataraft.lake:dr_target_lake]{dataraft.lake::dr_target_
 An updated definition.
 }
 \description{
-Store or replace a destination without writing data. \code{\link[=dr_trial]{dr_trial()}} disables
+Store or replace a destination without writing data. \code{\link[=dr_run]{dr_run()}} disables
 it; \code{\link[=dr_run]{dr_run()}} and \code{\link[=dr_publish]{dr_publish()}} execute it after successful output checks.
 }
 \examples{

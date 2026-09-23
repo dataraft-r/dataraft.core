@@ -52,11 +52,11 @@ A \code{product}, ready for composition, inspection and execution.
 \description{
 Define a data delivery by name, its expected columns and its quality rules.
 A product is a reusable specification. Bind a source with \code{\link[=dr_add_source]{dr_add_source()}},
-or supply data when executing a workflow. Use \code{\link[=dr_trial]{dr_trial()}} before writing.
+or supply data when executing a workflow. Use \code{\link[=dr_run]{dr_run()}} before writing.
 }
 \details{
 Add named sources, ordinary transformation functions and optional checks or
-a target. Use \code{\link[=dr_trial]{dr_trial()}} to try it, or \code{\link[=dr_publish]{dr_publish()}} to save checked output.
+a target. Use \code{\link[=dr_run]{dr_run()}} to try it, or \code{\link[=dr_publish]{dr_publish()}} to save checked output.
 \code{\link[=dr_run]{dr_run()}} executes the full configuration, including writers. Products can be
 sources of other products; shared dependencies run once per execution.
 }
@@ -73,5 +73,5 @@ all tables in memory. Table contracts are supplied through contracts.
 orders <- dr_product("orders", data.frame(id = 1:2, amount = c(25, 75))) |>
   dplyr::mutate(amount = round(amount, 2)) |>
   dr_add_quality(~ amount >= 0)
-orders |> dr_trial() |> dr_collect()
+orders |> dr_run(write = FALSE, stop_on_failure = FALSE) |> dr_collect()
 }

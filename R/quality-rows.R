@@ -17,7 +17,7 @@
 #' @examples
 #' orders <- dr_product("orders", data.frame(amount = c(10, -2))) |>
 #'   dr_add_quality(list(positive = ~ amount >= 0))
-#' failed <- dr_trial(orders, stop_on_failure = FALSE)
+#' failed <- dr_run(write = FALSE, orders, stop_on_failure = FALSE)
 #' dr_quality_rows(failed, "positive")
 dr_quality_rows <- function(x, rule = NULL, contract = NULL, limit = 100) {
   if (

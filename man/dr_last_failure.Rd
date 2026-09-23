@@ -13,7 +13,7 @@ dr_last_failure(clear = FALSE)
 The failed result, or \code{NULL} if none has been retained.
 }
 \description{
-Recover the result after a failed \code{dr_trial(...) |> dr_collect()} pipe.
+Recover the result after a failed \code{dr_run(write = FALSE, stop_on_failure = FALSE, ...) |> dr_collect()} pipe.
 The result retains checks and local exceptions for \code{\link[=dr_quality_report]{dr_quality_report()}},
 \code{\link[=dr_quality_rows]{dr_quality_rows()}} and \code{\link[=dr_quality_errors]{dr_quality_errors()}}. Successful runs do not replace it.
 Only the most recent execution error carrying a result is retained. Definition
@@ -24,7 +24,7 @@ Nothing is written to disk or sent to a catalog.
 \examples{
 product <- dr_product("orders", data.frame(amount = -1)) |>
   dr_add_quality(~ amount >= 0)
-try(dr_trial(product) |> dr_collect(), silent = TRUE)
+try(dr_run(write = FALSE, stop_on_failure = FALSE, product) |> dr_collect(), silent = TRUE)
 dr_quality_report(dr_last_failure())
 invisible(dr_last_failure(clear = TRUE))
 }

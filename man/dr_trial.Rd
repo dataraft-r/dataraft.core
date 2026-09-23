@@ -4,21 +4,24 @@
 \alias{dr_trial}
 \title{Try a product without invoking configured writers}
 \usage{
-dr_trial(x, data = NULL, sources = NULL, stop_on_failure = FALSE)
+dr_trial(x, data = NULL, sources = NULL, stop_on_failure = TRUE)
 }
 \arguments{
 \item{x}{Product or modular \code{\link[=dr_workflow]{dr_workflow()}} definition.}
 
 \item{data, sources}{Replacement delivery or named sources, as in \code{\link[=dr_run]{dr_run()}}.}
 
-\item{stop_on_failure}{Defaults to \code{FALSE}: a failed trial returns a result
-for \code{\link[=dr_quality_report]{dr_quality_report()}} and \code{\link[=dr_quality_rows]{dr_quality_rows()}}. Use \code{TRUE} to raise an error.
-\code{\link[=dr_run]{dr_run()}} and \code{\link[=dr_publish]{dr_publish()}} still raise errors on failure by default.}
+\item{stop_on_failure}{Raise errors by default, as in \code{\link[=dr_run]{dr_run()}}. Set \code{FALSE}
+explicitly to inspect a failed result.}
 }
 \value{
 An in-memory run result accepted by \code{\link[=dr_collect]{dr_collect()}} and \code{\link[dataraft.metrics:dr_measure]{dataraft.metrics::dr_measure()}}.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#deprecated}{\figure{lifecycle-deprecated.svg}{options: alt='[Deprecated]'}}}{\strong{[Deprecated]}}
+}
+\details{
+Deprecated since 0.1.0.9005; removal is planned for 2027-01-01.
 Compatibility shorthand for \code{dr_run(x, write = FALSE)}. Executes sources,
 transformations and checks through the same execution path. The write flag
 disables targets, catalogs and durable evidence throughout the dependency graph.
