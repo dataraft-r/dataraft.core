@@ -1,5 +1,6 @@
 # dataraft.core 0.1.0.9006
 
+* Products can publish one checked delivery to multiple output ports. The first port is primary; later adapters write sequentially, and a partial failure records the committed ports without claiming a cross-destination transaction.
 * Output-port SLAs are checked after successful publication and retained in run evidence; publishing an SLA port requires an explicit business date.
 * `dr_hook()` accepts `deprecated` for lake lifecycle transitions.
 * Use the current product API throughout code, examples and tests; development compatibility wrappers are removed.
