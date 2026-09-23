@@ -7,7 +7,7 @@
 #' @param id Contract identifier.
 #' @param owner,description,grain Optional business metadata.
 #' @param version Contract definition version.
-#' @param ... Additional arguments to [dr_contract()], such as `key`,
+#' @param ... Additional draft settings, such as `key`,
 #'   `required`, `rules`, `operator` or `column_metadata`.
 #' @returns A printable `dr_contract_draft` inheriting from `contract`.
 #' @seealso [dr_contract_confirm()], [dr_contract_diff()]

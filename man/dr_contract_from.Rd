@@ -23,7 +23,7 @@ dr_contract_from(
 
 \item{version}{Contract definition version.}
 
-\item{...}{Additional arguments to \code{\link[=dr_contract]{dr_contract()}}, such as \code{key},
+\item{...}{Additional draft settings, such as \code{key},
 \code{required}, \code{rules}, \code{operator} or \code{column_metadata}.}
 }
 \value{

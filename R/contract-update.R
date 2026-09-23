@@ -23,7 +23,7 @@
 #' @param columns Named type vector or zero-length prototypes to add or replace,
 #'   as in [dr_contract()]. Omit to retain the declared types.
 #' @param remove Character vector of declared column names to remove.
-#' @param ... Other named arguments of [dr_contract()] to replace in full, such as
+#' @param ... Named contract fields to replace in full, such as
 #'   `required`, `key`, `grain`, `rules`, `owner` or `column_metadata`.
 #' @returns A new `contract` specification. Use [dr_contract_diff()] to review it.
 #' @seealso [dr_contract()], [dr_contract_diff()]

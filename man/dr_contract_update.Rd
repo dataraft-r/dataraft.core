@@ -24,7 +24,7 @@ as in \code{\link[=dr_contract]{dr_contract()}}. Omit to retain the declared typ
 
 \item{remove}{Character vector of declared column names to remove.}
 
-\item{...}{Other named arguments of \code{\link[=dr_contract]{dr_contract()}} to replace in full, such as
+\item{...}{Named contract fields to replace in full, such as
 \code{required}, \code{key}, \code{grain}, \code{rules}, \code{owner} or \code{column_metadata}.}
 }
 \value{
