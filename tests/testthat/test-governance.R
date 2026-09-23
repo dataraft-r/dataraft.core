@@ -55,6 +55,39 @@ test_that("ports bind existing sources and exactly one target", {
     class = "dataraft_error_definition")
 })
 
+test_that("multiple output ports share one checked delivery", {
+  skip_if_not_installed("dataraft.adapters")
+  first <- withr::local_tempfile()
+  second <- withr::local_tempfile()
+  reads <- 0L
+  product <- dr_product("multiple.ports") |>
+    dr_add_source(function() { reads <<- reads + 1L; data.frame(id = 1L) }) |>
+    dr_add_output(dr_output("primary", dataraft.adapters::dr_target_rds(first))) |>
+    dr_add_output(dr_output("secondary", dataraft.adapters::dr_target_rds(second)))
+  result <- dr_run(product)
+  expect_equal(reads, 1L)
+  expect_equal(result$status, "published")
+  expect_equal(vapply(result$port_outputs, `[[`, "", "status"),
+    c(primary = "published", secondary = "published"))
+  expect_true(dir.exists(first))
+  expect_true(dir.exists(second))
+})
+
+test_that("a failed secondary output reports committed primary output", {
+  skip_if_not_installed("dataraft.adapters")
+  first <- withr::local_tempfile()
+  blocked <- withr::local_tempfile()
+  writeLines("not a directory", blocked)
+  product <- dr_product("partial.ports", data.frame(id = 1L)) |>
+    dr_add_output(dr_output("primary", dataraft.adapters::dr_target_rds(first))) |>
+    dr_add_output(dr_output("secondary", dataraft.adapters::dr_target_rds(blocked)))
+  result <- dr_run(product, stop_on_failure = FALSE)
+  expect_equal(result$status, "error")
+  expect_equal(result$port_outputs$primary$status, "published")
+  expect_equal(result$port_outputs$secondary$status, "failed")
+  expect_true(dir.exists(first))
+})
+
 test_that("published hooks receive a run ID and cannot undo a release", {
   events <- list()
   product <- dr_product("hooked", data.frame(id = 1L)) |>
