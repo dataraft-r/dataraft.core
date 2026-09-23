@@ -55,7 +55,9 @@ blocked run results for programmatic inspection.
 release and requires an explicit product \code{code_version}. Live reference
 quality checks cannot reuse cached releases.
 \item \code{business_date} and \code{notify}: optional lake publication context and an
-existing notification callback.
+existing notification callback. A product with an output-port SLA requires
+\code{business_date} for publication; the successful delivery is evaluated
+against the deadline and recorded with run evidence.
 }
 
 Selecting a quality engine through execution defaults preserves the declared
