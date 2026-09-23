@@ -1,5 +1,7 @@
 # dataraft.core 0.1.0.9005
 
+* Add organization policies, impact analysis, SLA evaluation, ports and post-execution hooks.
+
 * The modular workflow wrapper is removed; the deprecated builder produces ordinary products.
 * `dr_contract()` now has five core arguments. Compose metadata and policy separately; legacy dots are deprecated.
 * `dr_quality_rule()` and pointblank specifications store action/threshold; severity/max_failure are deprecated.
