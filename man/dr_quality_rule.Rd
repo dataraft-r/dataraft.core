@@ -15,7 +15,8 @@ dr_quality_rule(
   engine = c("native", "pointblank"),
   action = NULL,
   threshold = NULL,
-  dimension = NULL
+  dimension = NULL,
+  volatile = FALSE
 )
 
 dr_quality_counts(n_failed, n_total)
@@ -66,6 +67,9 @@ rejected rows until an execution path actually removes them.}
 quarantine, every rejected row is removed regardless of threshold.}
 
 \item{dimension}{Optional ODCS quality dimension.}
+
+\item{volatile}{Explicitly allow time-dependent or random checks. Such checks
+are labelled volatile, cannot authorize attestations and cannot use release caching.}
 
 \item{n_failed, n_total}{Failed and total test units.}
 

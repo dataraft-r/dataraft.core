@@ -17,7 +17,7 @@ Uses the same gate as ingestion: warning states are allowed; empty results,
 failures, evaluation errors and skipped checks fail the expectation.
 }
 \examples{
-\dontshow{if (requireNamespace("testthat", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("testthat", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
   c(id = "integer"), key = "id")
 dr_expect_quality(dr_validate(data.frame(id = 1:2), contract))

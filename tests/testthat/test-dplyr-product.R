@@ -167,7 +167,7 @@ test_that("dplyr operations work on caller-owned lazy tables", {
       dplyr::summarise(total = sum(amount, na.rm = TRUE), .groups = "drop")
   }
   lazy <- dr_run(make(dr_source_database(con, "orders")))
-  expect_s3_class(lazy$data, "tbl_sql")
+  expect_s3_class(lazy$data, "data.frame")
   expect_equal(dr_collect(lazy), dr_collect(dr_run(make(data))))
   expect_true(DBI::dbIsValid(con))
 })

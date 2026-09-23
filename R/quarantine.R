@@ -22,7 +22,20 @@ prepare_quality_candidate <- function(data, contract) {
         subclass = "dataraft_error_quality"
       )
     }
+    assert_stable_rule(rule)
+    if (isTRUE(rule$volatile)) {
+      abort(
+        "Quarantine requires deterministic row rules.",
+        subclass = "dataraft_error_quality"
+      )
+    }
     units <- quality_formula_units(data, rule$check)$.dr_pass
+    if (!identical(units, quality_formula_units(data, rule$check)$.dr_pass)) {
+      abort(
+        "Quarantine rule changed on repeated evaluation.",
+        subclass = "dataraft_error_quality"
+      )
+    }
     bad <- is.na(units) | !units
     rejected <- rejected | bad
     item <- from_counts(rule$name, sum(bad), length(bad), rule$severity, 0)

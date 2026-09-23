@@ -237,6 +237,8 @@ dr_contract <- function(
 #'   rejected rows until an execution path actually removes them.
 #' @param threshold Permitted fraction of failed test units, from zero to one. For
 #'   quarantine, every rejected row is removed regardless of threshold.
+#' @param volatile Explicitly allow time-dependent or random checks. Such checks
+#'   are labelled volatile, cannot authorize attestations and cannot use release caching.
 #' @param dimension Optional ODCS quality dimension.
 #' @param severity Compatibility argument: `"error"` corresponds to
 #'   `action = "block"`, `"warning"` to `action = "warn"`. Prefer `action`
@@ -276,8 +278,10 @@ dr_quality_rule <- function(
   engine = c("native", "pointblank"),
   action = NULL,
   threshold = NULL,
-  dimension = NULL
+  dimension = NULL,
+  volatile = FALSE
 ) {
+  flag(volatile, "volatile")
   if (!is.null(action)) {
     action <- match.arg(action, c("block", "warn", "quarantine"))
     if (!missing(severity)) {
@@ -355,7 +359,8 @@ dr_quality_rule <- function(
       engine = engine,
       engine_explicit = engine_explicit,
       action = action,
-      dimension = dimension
+      dimension = dimension,
+      volatile = volatile
     ),
     class = "dr_rule"
   )
@@ -476,6 +481,18 @@ pointblank_results <- function(rule, data, keep_agent = FALSE) {
   formula <- inherits(rule$check, "formula")
   if (formula) {
     units <- quality_formula_units(data, rule$check)
+    if (
+      !isTRUE(rule$volatile) &&
+        !identical(
+          dr_collect(units),
+          dr_collect(quality_formula_units(data, rule$check))
+        )
+    ) {
+      abort(
+        "Quality rule changed on repeated evaluation; declare volatile = TRUE.",
+        subclass = "dataraft_error_quality"
+      )
+    }
     if (!is.data.frame(units) && !inherits(units, "tbl_sql")) {
       abort(
         subclass = "dataraft_error_contract",
@@ -765,6 +782,13 @@ dr_validate.default <- function(
   }
   out <- dplyr::bind_rows(result)
   out$stage <- stage
+  if (isTRUE(contract$automatic_schema)) {
+    inferred <- out$rule %in% c("schema", "types") & out$status == "passed"
+    out$status[inferred] <- "unvalidated"
+    out$message[
+      inferred
+    ] <- "No declared contract: schema inferred from this delivery, not independently validated."
+  }
   out$engine[
     out$engine == "contract" &
       !out$rule %in%
@@ -795,7 +819,20 @@ dr_validate.default <- function(
 
 quality_ok <- function(results) {
   rlang::local_error_call(rlang::caller_env())
-  nrow(results) > 0 && all(results$status %in% c("passed", "warning"))
+  if (
+    !is.data.frame(results) ||
+      !all(c("status", "engine", "rule") %in% names(results))
+  ) {
+    return(FALSE)
+  }
+  nrow(results) > 0 &&
+    isTRUE(all(
+      results$status %in%
+        c("passed", "warning") |
+        (results$status == "unvalidated" &
+          results$engine == "contract" &
+          grepl("(^|/)(schema|types)$", results$rule))
+    ))
 }
 
 

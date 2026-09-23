@@ -161,7 +161,7 @@ dr_incidents <- function(x) {
 #' @returns Updated run history, invisibly. Delivery failures remain pending.
 #' @export
 #' @examples
-#' # catalog <- dataraft.catalog::dr_catalog_openlineage(
+#' # catalog <- dataraft.adapters::dr_catalog_openlineage(
 #' #   "https://lineage.example/api/v1/lineage")
 #' # dr_retry_catalogs("runs", list(catalog))
 dr_retry_catalogs <- function(path, catalogs) {
@@ -179,10 +179,18 @@ dr_retry_catalogs <- function(path, catalogs) {
 }
 
 
-finalize_product_run <- function(result, product, evidence = NULL) {
+finalize_product_run <- function(
+  result,
+  product,
+  evidence = NULL,
+  write = TRUE
+) {
   rlang::local_error_call(rlang::caller_env())
   record <- safe_run_evidence(result, product)
-  catalogs <- normalize_catalogs(product$catalogs)
+  if (!write) {
+    evidence <- NULL
+  }
+  catalogs <- if (write) normalize_catalogs(product$catalogs) else list()
   for (id in names(catalogs)) {
     catalog <- catalogs[[id]]
     supported <- if (inherits(catalog, "dr_openlineage_catalog")) {
@@ -337,6 +345,7 @@ safe_run_evidence <- function(result, product = NULL) {
     run_id = result$run_id,
     product = result$asset %||% metadata$product %||% product$id,
     status = result$status,
+    validation_status = result$validation_status %||% "unvalidated",
     started_at = safe_scalar(result$started_at %||% metadata$started_at),
     finished_at = safe_scalar(result$finished_at %||% metadata$finished_at),
     backend = safe_scalar(result$backend %||% metadata$backend),

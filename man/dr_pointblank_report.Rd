@@ -26,7 +26,7 @@ describes pointblank action levels; the authoritative dataraft gate is shown
 by \code{\link[=dr_quality_report]{dr_quality_report()}}, especially when using \code{policy = "rule"}.
 }
 \examples{
-\dontshow{if (requireNamespace("pointblank", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("pointblank", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 contract <- dr_contract("orders", "1", "Analytics", "Orders", "One order",
   c(amount = "numeric"), rules = list(dr_pointblank_checks("amounts", function(data) {
     pointblank::create_agent(data) |>

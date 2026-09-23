@@ -37,7 +37,10 @@ dr_update_contract <- function(x, contract = NULL, ...) {
   rlang::check_dots_empty()
   dr_extract_contract(x)
   if (is.null(contract)) {
-    abort("Supply a replacement contract.", subclass = "dataraft_error_contract")
+    abort(
+      "Supply a replacement contract.",
+      subclass = "dataraft_error_contract"
+    )
   }
   dr_add_contract(x, contract)
 }

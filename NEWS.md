@@ -1,3 +1,12 @@
+# dataraft.core 0.1.0.9004
+
+* Mark inferred schema evidence unvalidated and freeze lazy candidates before generic writes.
+* Dispatch backend operations through provider S3 methods, with no reverse sibling namespace calls.
+* Use product execution with write = FALSE for trials, including upstream target/catalog/evidence suppression.
+* Add canonical action/threshold quality composition, volatile rule detection and repeat evaluation, contract policy/metadata helpers and dm-only lookup validation.
+
+* Use the umbrella CI manifest as the single immutable family dependency lock.
+
 # dataraft.core 0.1.0.9001
 
 * `dr_update_contract()` is the preferred name for explicit contract revisions and can replace a product or workflow contract. `dr_contract_update()` remains a deprecated compatibility spelling without runtime warnings.

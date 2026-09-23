@@ -19,7 +19,7 @@ test_that("reusable lookup specs retain dependency resolution", {
   )
   alternate <- dr_set_engine(lookup, "dm")
   expect_identical(alternate$by, lookup$by)
-  expect_identical(lookup$engine, "native")
+  expect_identical(lookup$engine, "dm")
   flow <- dr_workflow() |>
     dr_add_product(dr_product("orders")) |>
     dr_add_recipe(dr_recipe() |> dr_step_transform(lookup))
@@ -59,7 +59,7 @@ test_that("specification printing shows engines without reading references", {
     by = "id",
     name = "reference"
   )
-  expect_output(print(lookup), "Engine: native")
+  expect_output(print(lookup), "Engine: dm")
   expect_output(
     print(dr_quality_rule("positive", ~ amount > 0)),
     "Engine: native"

@@ -2,8 +2,8 @@
 family_owners <- c(
   "dr_capabilities" = "dataraft.core",
   "dr_component_capabilities" = "dataraft.core",
-  "dr_catalog_openlineage" = "dataraft.catalog",
-  "openlineage_events" = "dataraft.catalog",
+  "dr_catalog_openlineage" = "dataraft.adapters",
+  "openlineage_events" = "dataraft.adapters",
   "dr_read_source" = "dataraft.core",
   "dr_source_database" = "dataraft.adapters",
   "dr_execute_transform" = "dataraft.core",

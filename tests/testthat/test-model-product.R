@@ -90,8 +90,8 @@ test_that("model publication pins all members and rejects stale correction", {
         lake,
         asset = "portfolio",
         release = first$release_id
-      )$status ==
-        "passed"
+      )$status %in%
+        c("passed", "unvalidated")
     ),
     TRUE
   )

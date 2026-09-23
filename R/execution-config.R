@@ -42,11 +42,8 @@ dr_execution_config <- function(
   }
   if (!is.null(to)) {
     to <- normalize_target(to)
-    if (!is.null(layer) && !inherits(to, "dr_lake_target")) {
-      abort(
-        subclass = "dataraft_error_definition",
-        "An execution layer requires a lake target."
-      )
+    if (!is.null(layer)) {
+      to <- dr_configure_target(to, layer = layer)
     }
     if (
       !component_method("dr_write_target", to) &&
@@ -147,17 +144,13 @@ apply_execution_defaults <- function(product, execution) {
     }
     if (!length(stack) && is.null(x$target) && !is.null(execution$to)) {
       x$target <- execution$to
-      if (!is.null(execution$layer)) x$target$layer <- execution$layer
+      if (!is.null(execution$layer)) {
+        x$target <- dr_configure_target(x$target, layer = execution$layer)
+      }
     } else if (
       !length(stack) && is.null(x$target$layer) && !is.null(execution$layer)
     ) {
-      if (!inherits(x$target, "dr_lake_target")) {
-        abort(
-          subclass = "dataraft_error_definition",
-          "An execution layer requires a lake target on the root product."
-        )
-      }
-      x$target$layer <- execution$layer
+      x$target <- dr_configure_target(x$target, layer = execution$layer)
     }
     sources <- lapply(product_sources(x), function(source) {
       if (inherits(source, "dr_product")) {
@@ -224,6 +217,14 @@ replace_execution_sources <- function(x, data = NULL, sources = NULL) {
       subclass = "dataraft_error_definition",
       "sources must be a named list, for example sources = list(orders = new_orders)."
     )
+  }
+  if (
+    !is.null(data) &&
+      inherits(x, "dr_product") &&
+      !inherits(x, "dr_model_product") &&
+      !length(x$sources)
+  ) {
+    x <- dr_add_source(x, data, name = x$id)
   }
   if (!is.null(data)) {
     if (!inherits(x, "dr_product") || length(x$sources) != 1L) {

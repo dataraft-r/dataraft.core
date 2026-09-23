@@ -12,7 +12,10 @@ dr_run(pipeline, lake = NULL, ...)
 \item{lake}{Optional connected lake or lake configuration, overriding the
 product's target for this run. Prefer \code{\link[=dr_set_target]{dr_set_target()}} in reusable definitions.}
 
-\item{...}{Execution options described above or provided by an adapter.}
+\item{...}{Execution options described above or provided by an adapter.
+For products, \code{write = FALSE} evaluates sources and quality through the same
+path while disabling target, catalog and evidence writes for all dependencies.
+It does not verify destination permissions, capacity or publication conflicts.}
 }
 \value{
 For products, a run result containing status, timestamps, input and

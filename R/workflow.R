@@ -63,7 +63,7 @@ dr_plan <- function(pipeline) {
   }
   attr(out, "complete") <- tryCatch(
     {
-      dataraft.lake::dr_internal_check_pipeline(pipeline)
+      dr_check_pipeline(pipeline)
       TRUE
     },
     error = function(e) FALSE

@@ -6,7 +6,7 @@
       <Data product: orders >
       Deliveries: source_1
       Transformations: 1
-      Contract: automatic structure
+      Contract: unvalidated (no declared contract)
       Quality: 0 rules
       Target: memory
       Status: defined

@@ -115,7 +115,7 @@ test_that("evidence allowlist removes URL credentials and query secrets", {
 })
 
 test_that("lake registry inputs retain source identity in durable lineage", {
-  skip_if_not_installed("dataraft.catalog")
+  skip_if_not_installed("dataraft.adapters")
   result <- structure(
     list(
       run_id = "lake_fixture",

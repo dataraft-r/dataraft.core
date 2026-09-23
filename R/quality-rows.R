@@ -65,7 +65,9 @@ dr_quality_rows <- function(x, rule = NULL, contract = NULL, limit = 100) {
   if (inherits(x, "dr_run_result")) {
     checks <- dr_quality(x)
     if (is.null(rule) && is.data.frame(checks)) {
-      failed <- unique(checks$rule[!checks$status %in% c("passed", "warning")])
+      failed <- unique(checks$rule[
+        !checks$status %in% c("passed", "warning", "unvalidated")
+      ])
       if (length(failed) == 1L) {
         rule <- failed[[1L]]
       }
@@ -100,11 +102,11 @@ dr_quality_rows <- function(x, rule = NULL, contract = NULL, limit = 100) {
     if (!is.null(diagnostic$config)) {
       lake <- diagnostic$lake
       if (!inherits(lake, "dr_lake") || !DBI::dbIsValid(lake$con)) {
-        lake <- dataraft.lake::dr_connect_lake(
+        lake <- dr_connect_backend(
           diagnostic$config,
           read_only = TRUE
         )
-        on.exit(dataraft.lake::dr_close_lake(lake), add = TRUE)
+        on.exit(dr_close_backend(lake), add = TRUE)
       }
       x <- dplyr::tbl(
         lake$con,

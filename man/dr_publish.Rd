@@ -46,7 +46,7 @@ definition before source acquisition.
 Use \code{\link[=dr_collect]{dr_collect()}} to obtain the output as an ordinary tibble.
 }
 \examples{
-\dontshow{if (requireNamespace("dataraft.lake", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("dataraft.lake", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 root <- tempfile("dataraft-")
 result <- dr_product("orders") |>
   dr_add_source(data.frame(id = 1:2)) |>

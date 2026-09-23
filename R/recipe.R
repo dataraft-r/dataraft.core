@@ -165,7 +165,7 @@ dr_step_lookup <- function(
   x,
   source,
   by,
-  engine = c("native", "dm"),
+  engine = c("dm", "native"),
   unmatched = c("error", "keep"),
   suffix = c(".x", ".y"),
   name = NULL,

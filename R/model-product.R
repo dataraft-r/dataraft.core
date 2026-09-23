@@ -54,7 +54,12 @@ new_model_product <- function(x, data, contracts) {
 
 
 #' @export
-dr_validate.dr_model_product <- function(data, contract = NULL, ...) {
+dr_validate.dr_model_product <- function(
+  data,
+  contract = NULL,
+  ...,
+  .write = TRUE
+) {
   rlang::check_dots_empty()
   if (
     !is.null(contract) ||
@@ -85,10 +90,11 @@ dr_validate.dr_model_product <- function(data, contract = NULL, ...) {
       "Model members must be named table products."
     )
   }
-  invisible(lapply(data$sources, dr_validate))
-  if (!is.null(data$target)) {
+  invisible(lapply(data$sources, dr_validate, .write = .write))
+  if (.write && !is.null(data$target)) {
     if (
-      !inherits(data$target, "dr_lake_target") ||
+      !isTRUE(dr_capabilities(data$target)$transactions) ||
+        !isTRUE(dr_capabilities(data$target)$immutable) ||
         length(data$target$partition_by)
     ) {
       abort(
@@ -138,10 +144,12 @@ dr_run.dr_model_product <- function(
   data = NULL,
   sources = NULL,
   previous = NULL,
+  write = TRUE,
   ...
 ) {
   rlang::check_dots_empty()
   flag(stop_on_failure, "stop_on_failure")
+  flag(write, "write")
   if (!is.null(data)) {
     abort(
       subclass = "dataraft_error_definition",
@@ -157,7 +165,7 @@ dr_run.dr_model_product <- function(
   if (!is.null(lake)) {
     x <- dr_set_target(x, lake)
   }
-  x <- dr_validate(x)
+  x <- dr_validate(x, .write = write)
   result <- run_result(uid(), "completed")
   class(result) <- c("dr_model_result", class(result))
   result$asset <- x$id
@@ -203,9 +211,18 @@ dr_run.dr_model_product <- function(
       )
     }
   }
-  if (result$status == "completed" && !is.null(x$target)) {
+  result$validation_status <- if (any(result$quality$status == "unvalidated")) {
+    "unvalidated"
+  } else if (!quality_ok(result$quality)) {
+    "failed"
+  } else if (any(result$quality$status == "warning")) {
+    "warning"
+  } else {
+    "passed"
+  }
+  if (write && result$status == "completed" && !is.null(x$target)) {
     result <- tryCatch(
-      dataraft.lake::dr_internal_publish_model_result(x, result, previous),
+      dr_publish_model_result(x$target, x, result, previous),
       error = function(e) {
         result$status <- "error"
         result$error <- e
@@ -258,8 +275,8 @@ collect.dr_model_result <- function(x, ...) {
   if (!is.null(x$data)) {
     return(x$data)
   }
-  dataraft.lake::dr_internal_with_model_lake(x, function(lake) {
-    dataraft.lake::dr_internal_read_model_release(lake, x$asset, x$release_id)
+  dr_with_release_backend(x, function(lake) {
+    dr_read_model_release(lake, x$asset, x$release_id)
   })
 }
 

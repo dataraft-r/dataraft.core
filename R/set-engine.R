@@ -2,7 +2,7 @@
 #'
 #' Mirrors parsnip's separation of intent and implementation. Formula quality
 #' rules support `"native"` and `"pointblank"`; checked lookup specifications
-#' support `"native"` and `"dm"`. Engine selection never reads data or loads an
+#' use dm (`"native"` is a compatibility alias). Engine selection never reads data or loads an
 #' optional engine. Missing dependencies are reported at execution preflight.
 #' These engines implement individual operations, not the whole data platform.
 #' Storage is configured separately with [dr_set_target()] or `dr_publish(to = )`.
@@ -61,7 +61,7 @@ dr_set_engine.dr_lookup_transform <- function(x, engine, ...) {
 #' Specify a reusable checked relationship
 #'
 #' Defines an enrichment independently of a product or recipe. Use [dr_set_engine()]
-#' to choose native or dm constraint checks, then attach it with
+#' to select dm constraint checks, then attach it with
 #' [dr_step_transform()].
 #' @param source Reference data, path, source adapter, product or successful result.
 #' @param by Equality keys as a character vector, named vector or [dplyr::join_by()].

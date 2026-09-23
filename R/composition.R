@@ -142,7 +142,7 @@ normalize_source <- function(source, id, name, reader = NULL) {
       is.null(reader) &&
         tolower(tools::file_ext(source)) %in% c("parquet", "pq")
     ) {
-      source <- dataraft.adapters::dr_source_parquet(source)
+      source <- dr_as_parquet_source(source)
     } else {
       source <- dr_source_file(
         paste0(
@@ -340,7 +340,7 @@ dr_set_target <- function(x, target) {
 #' @param catalog Function receiving run metadata, or catalog adapter.
 #' @param name Optional unique catalog name, generated when omitted.
 #' @returns An updated product definition.
-#' @seealso [dataraft.catalog::dr_catalog_openlineage()], [dr_retry_catalogs()]
+#' @seealso [dataraft.adapters::dr_catalog_openlineage()], [dr_retry_catalogs()]
 #' @export
 #' @examples
 #' dr_product("orders") |>
@@ -372,7 +372,7 @@ dr_add_catalog <- function(x, catalog, name = NULL) {
 
 
 #' @export
-dr_validate.dr_product <- function(data, contract = NULL, ...) {
+dr_validate.dr_product <- function(data, contract = NULL, ..., .write = TRUE) {
   rlang::check_dots_empty()
   if (!is.null(contract)) {
     abort(
@@ -380,13 +380,13 @@ dr_validate.dr_product <- function(data, contract = NULL, ...) {
       "Add a contract with dr_add_contract() before preflight."
     )
   }
-  validate_product_graph(data)
+  validate_product_graph(data, write = .write)
   attr(data, "dr_validated") <- TRUE
   data
 }
 
 
-validate_product_graph <- function(product) {
+validate_product_graph <- function(product, write = TRUE) {
   rlang::local_error_call(rlang::caller_env())
   seen <- new.env(parent = emptyenv())
   visit <- function(data, stack = character()) {
@@ -466,7 +466,7 @@ validate_product_graph <- function(product) {
     for (rule in rules) {
       assert_component(rule, "dr_run_quality")
     }
-    if (!is.null(data$target)) {
+    if (write && !is.null(data$target)) {
       dr_check_component(data$target)
       if (
         !component_method("dr_execute_target", data$target) &&
@@ -478,9 +478,11 @@ validate_product_graph <- function(product) {
         )
       }
     }
-    normalize_catalogs(data$catalogs)
-    for (catalog in data$catalogs) {
-      assert_component(catalog, "dr_publish_metadata")
+    if (write) {
+      normalize_catalogs(data$catalogs)
+      for (catalog in data$catalogs) {
+        assert_component(catalog, "dr_publish_metadata")
+      }
     }
     assign(data$id, data, seen)
     invisible(NULL)
@@ -677,7 +679,7 @@ print.dr_product <- function(x, ...) {
   cat(
     "Contract: ",
     if (is.null(x$contract)) {
-      "automatic structure"
+      "unvalidated (no declared contract)"
     } else {
       paste(length(x$contract$columns), "fields, version", x$contract$version)
     },
@@ -687,7 +689,7 @@ print.dr_product <- function(x, ...) {
   cat("Quality:", length(x$quality) + length(x$contract$rules), "rules\n")
   target <- product_display_target(x)
   target_label <- dr_inspect(target)$type
-  if (inherits(target, "dr_lake_target")) {
+  if (!is.null(dr_inspect(target)$layer)) {
     target_label <- paste0(target_label, " (", target$layer, ")")
   }
   cat("Target: ", target_label, "\n", sep = "")
@@ -714,11 +716,11 @@ product_display_target <- function(x) {
   execution <- attr(x, "dr_execution_config", exact = TRUE)
   target <- x$target %||% execution$to
   if (
-    inherits(target, "dr_lake_target") &&
+    !is.null(dr_inspect(target)$layer) &&
       !is.null(execution$layer) &&
       (is.null(x$target) || is.null(target$layer))
   ) {
-    target$layer <- execution$layer
+    target <- dr_configure_target(target, layer = execution$layer)
   }
   target
 }
@@ -764,7 +766,7 @@ product_plan <- function(x, check = TRUE) {
   ids <- c(
     names(sources),
     names(x$transforms),
-    x$contract$id %||% "automatic structure",
+    x$contract$id %||% "unvalidated (no declared contract)",
     x$id,
     if (length(x$catalogs)) names(normalize_catalogs(x$catalogs))
   )

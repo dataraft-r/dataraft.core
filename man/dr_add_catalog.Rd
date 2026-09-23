@@ -25,5 +25,5 @@ dr_product("orders") |>
   dr_add_catalog(function(metadata) invisible(metadata), name = "audit")
 }
 \seealso{
-\code{\link[dataraft.catalog:dr_catalog_openlineage]{dataraft.catalog::dr_catalog_openlineage()}}, \code{\link[=dr_retry_catalogs]{dr_retry_catalogs()}}
+\code{\link[dataraft.adapters:dr_catalog_openlineage]{dataraft.adapters::dr_catalog_openlineage()}}, \code{\link[=dr_retry_catalogs]{dr_retry_catalogs()}}
 }

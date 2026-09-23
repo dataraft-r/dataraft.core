@@ -6,9 +6,9 @@
 #' keys never match. With `unmatched = "keep"`, unmatched input rows remain
 #' and receive missing reference attributes.
 #'
-#' The native engine checks keys with dplyr. The optional dm engine constructs
-#' and examines real primary and foreign key constraints. Both engines use the
-#' same dplyr left join for consistent column naming and verify the row count.
+#' dm constructs and examines primary and foreign key constraints. The join
+#' uses dplyr and verifies the row count. The historical `"native"` engine name
+#' remains a compatibility alias for the same dm implementation.
 #' Lookup checks run at this transformation step, before subsequent transforms.
 #' Ordinary [dr_add_quality()] checks still apply to the final candidate.
 #'
@@ -26,7 +26,7 @@
 #' @param by Equality keys, supplied as a character vector, a named vector
 #'   mapping input to reference columns, or [dplyr::join_by()]. Inequality,
 #'   rolling and cross joins belong in ordinary dplyr transformations.
-#' @param engine Constraint validation engine: `"native"` or optional `"dm"`.
+#' @param engine Constraint validation engine: `"dm"`; `"native"` is a legacy alias.
 #' @param unmatched Whether unmatched input rows cause an error or are retained
 #'   with missing reference values. Unused reference rows are always allowed.
 #' @param suffix Two suffixes for overlapping non-key column names, as in
@@ -52,7 +52,7 @@ dr_add_lookup <- function(
   x,
   source,
   by,
-  engine = c("native", "dm"),
+  engine = c("dm", "native"),
   unmatched = c("error", "keep"),
   suffix = c(".x", ".y"),
   name = NULL,
@@ -260,30 +260,7 @@ dr_execute_transform.dr_lookup_transform <- function(
   }
   left <- dplyr::ungroup(data)
   right <- dplyr::ungroup(reference)
-  dm_checks <- NULL
-  if (transform$engine == "dm") {
-    dm_checks <- lookup_dm_constraints(left, right, by, transform$unmatched)
-  } else {
-    count_name <- ".dr_lookup_count"
-    while (count_name %in% parent_keys) {
-      count_name <- paste0(count_name, "_")
-    }
-    duplicates <- dplyr::count(
-      right,
-      !!!rlang::syms(parent_keys),
-      name = count_name
-    )
-    duplicates <- dplyr::filter(duplicates, !!rlang::sym(count_name) > 1L)
-    if (
-      lookup_missing_keys(right, parent_keys) > 0 || count_rows(duplicates) > 0
-    ) {
-      lookup_parent_error()
-    }
-    if (transform$unmatched == "error") {
-      orphans <- dplyr::anti_join(left, right, by = by, na_matches = "never")
-      if (count_rows(orphans) > 0) lookup_unmatched_error(orphans)
-    }
-  }
+  dm_checks <- lookup_dm_constraints(left, right, by, transform$unmatched)
   joined <- dplyr::left_join(
     data,
     right,
