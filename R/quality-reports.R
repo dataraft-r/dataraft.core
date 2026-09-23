@@ -216,11 +216,17 @@ report_file <- function(path, overwrite, write) {
 #' @returns The normalized output path, invisibly.
 #' @export
 #' @examplesIf requireNamespace("pointblank", quietly = TRUE)
-#' contract <- dr_contract("orders", version = "1", owner = "Analytics", description = "Orders", grain = "One order",
-#'   columns = c(amount = "numeric"), rules = list(dr_pointblank_checks("amounts", function(data) {
+#' contract <- dr_contract("orders",
+#' version = "1",
+#' columns = c(amount = "numeric"),
+#' rules = list(dr_pointblank_checks("amounts", function(data) {
 #'     pointblank::create_agent(data) |>
 #'       pointblank::col_vals_gte("amount", 0)
-#'   })))
+#'   }))) |>
+#'   dataraft.core::dr_contract_meta(owner = "Analytics",
+#' description = "Orders",
+#' grain = "One order",
+#' producer = "Analytics")
 #' quality <- dr_validate(data.frame(amount = c(10, -1)), contract,
 #'   keep_agents = TRUE)
 #' path <- tempfile(fileext = ".html")

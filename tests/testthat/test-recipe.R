@@ -48,8 +48,7 @@ test_that("recipe lookups remain replaceable shared execution dependencies", {
     data.frame(id = 1:2, region = c("North", "South"))
   })
   preparation <- dr_recipe() |> dr_step_lookup(customers, by = "id")
-  flow <- dr_workflow() |>
-    dr_add_product(dr_product("orders")) |>
+  flow <- dr_product("orders") |>
     dr_add_recipe(preparation) |>
     dr_add_source(data.frame(id = 1:2), name = "orders")
   expect_identical(calls, 0L)

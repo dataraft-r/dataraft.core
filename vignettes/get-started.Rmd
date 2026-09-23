@@ -90,7 +90,6 @@ flow$sources$delivery
 
 `dr_add_contract(x, NULL)` removes the contract. `dr_set_sources(x, delivery =
 NULL)` removes one input; `sources = NULL` clears them all. These operations
-never read data. The former modular workflow is now just a product; there is no
-separate wrapper state or execution method. `dr_trial()` is deprecated; use
-`dr_run(write = FALSE)` and choose `stop_on_failure = FALSE` explicitly when
-inspecting a blocked result.
+never read data. Recipes attach directly to products, which own their sources,
+checks and destination. Use `dr_run(write = FALSE)` and choose
+`stop_on_failure = FALSE` explicitly when inspecting a blocked result.

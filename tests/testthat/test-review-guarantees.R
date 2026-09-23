@@ -186,16 +186,6 @@ test_that("production reuses a checked rule while dry runs verify again", {
   expect_identical(calls, 5L)
 })
 
-test_that("trial is deprecated and has the same failure default as run", {
-  withr::local_options(lifecycle_verbosity = "warning")
-  product <- dr_product("review2", data.frame(value = -1)) |>
-    dr_add_quality(~ value > 0)
-  expect_warning(
-    expect_error(dr_trial(product), class = "dataraft_error"),
-    class = "lifecycle_warning_deprecated"
-  )
-  expect_error(dr_run(product, write = FALSE), class = "dataraft_error")
-})
 
 test_that("quality specifications use one canonical vocabulary", {
   native <- dr_quality_rule(~ x > 0, action = "warn", threshold = 0.1)
@@ -212,15 +202,6 @@ test_that("quality specifications use one canonical vocabulary", {
   expect_identical(
     agent[c("action", "threshold")],
     native[c("action", "threshold")]
-  )
-  withr::local_options(lifecycle_verbosity = "warning")
-  expect_warning(
-    dr_quality_rule(~ x > 0, severity = "warning"),
-    class = "lifecycle_warning_deprecated"
-  )
-  expect_warning(
-    dr_pointblank_checks("positive", identity, max_failure = 0.1),
-    class = "lifecycle_warning_deprecated"
   )
 })
 

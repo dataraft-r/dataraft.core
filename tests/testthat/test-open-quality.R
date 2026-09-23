@@ -33,7 +33,7 @@ test_that("action and threshold reuse the existing quality gate", {
   )
   expect_error(
     dr_quality_rule(~TRUE, action = "warn", severity = "error"),
-    "action or severity"
+    "unused argument"
   )
   expect_error(
     dr_add_quality(dr_product("x"), ~TRUE, threshold = 2),

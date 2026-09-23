@@ -64,7 +64,7 @@ editable_product <- function(x) {
 #' Store a named primary input without reading it. A workflow can instead bind
 #' one delivery with `data =` at execution. For several primary sources, use a
 #' transformation that combines their named list before table operations.
-#' @param x A [dr_product()] or modular [dr_workflow()] definition.
+#' @param x A [dr_product()] definition.
 #' @param source Data frame, file path, function or source adapter.
 #' @param name Optional source name, generated when omitted.
 #' @param reader Optional file reader. CSV, TSV, RDS and Excel have defaults.
@@ -73,8 +73,7 @@ editable_product <- function(x) {
 #' @seealso [dr_set_sources()], [dataraft.adapters::dr_source_database()], [dr_run()]
 #' @export
 #' @examples
-#' flow <- dr_workflow() |>
-#'   dr_add_product(dr_product("orders")) |>
+#' flow <- dr_product("orders") |>
 #'   dr_add_source(data.frame(id = 1:2, amount = c(25, 75)), name = "orders")
 #' dr_collect(dr_run(write = FALSE, stop_on_failure = FALSE, flow))
 dr_add_source <- function(
@@ -119,9 +118,7 @@ dr_add_source <- function(
 
 normalize_source <- function(source, id, name, reader = NULL) {
   rlang::local_error_call(rlang::caller_env())
-  if (inherits(source, "dr_product_workflow")) {
-    source <- compile_product_workflow(source)
-  }
+
   if (!is.null(reader) && (!is.character(source) || !is.function(reader))) {
     abort(
       subclass = "dataraft_error_definition",
@@ -161,7 +158,7 @@ normalize_source <- function(source, id, name, reader = NULL) {
 
 #' Add a transformation directly to a product
 #'
-#' For modular workflows, prefer [dr_recipe()] with [dr_step_transform()]. This
+#' For reusable preparation, prefer [dr_recipe()] with [dr_step_transform()]. This
 #' direct interface appends preparation to a product for compact pipelines.
 #' @param x A table product definition.
 #' @param transform R function, formula using `.x`, or transform adapter.
@@ -210,7 +207,7 @@ dr_add_transform <- function(x, transform, name = NULL) {
 #' values. Checks apply after preparation and gate framework writers.
 #' Adding a contract replaces the previous contract; `NULL` removes it.
 #' Quality rules accumulate.
-#' @param x A [dr_product()] specification or modular [dr_workflow()].
+#' @param x A [dr_product()] specification.
 #' @param contract Contract, named type vector, or named list of prototypes.
 #' @param quality One-sided row predicate, function, rule, or list of rules.
 #'   Formula `NA` results count as failures. Functions return scalar logicals
@@ -304,16 +301,15 @@ dr_add_quality <- function(
 
 #' Set a publication destination
 #'
-#' Store or replace a destination without writing data. [dr_run()] disables
+#' Store or replace a destination without writing data. `dr_run(write = FALSE)` disables
 #' it; [dr_run()] and [dr_publish()] execute it after successful output checks.
-#' @param x A [dr_product()] or modular [dr_workflow()] definition.
+#' @param x A [dr_product()] definition.
 #' @param target Lake folder path, connected lake, configuration or target
 #'   adapter. Use [dataraft.lake::dr_target_lake()] for partition or layer options.
 #' @returns An updated definition.
 #' @export
 #' @examplesIf requireNamespace("dataraft.lake", quietly = TRUE)
-#' dr_workflow() |>
-#'   dr_add_product(dr_product("orders")) |>
+#' dr_product("orders") |>
 #'   dr_set_target("data/orders")
 dr_set_target <- function(x, target) {
   x <- editable_product(x)

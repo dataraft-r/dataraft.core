@@ -1,11 +1,14 @@
 test_that("products normalize contracts and metadata through one class", {
   x <- dr_product("orders", contract = c(id = "integer"))
   y <- dr_product("orders") |>
-    dr_add_contract(dr_contract(
-      columns = c(id = "integer"),
-      owner = "Analytics",
-      description = "Order records"
-    ))
+    dr_add_contract(
+      dr_contract(columns = c(id = "integer")) |>
+        dataraft.core::dr_contract_meta(
+          owner = "Analytics",
+          description = "Order records",
+          producer = "Analytics"
+        )
+    )
   expect_identical(class(x), "dr_product")
   expect_identical(class(y), class(x))
   expect_identical(dr_inspect(y)$owner, "Analytics")

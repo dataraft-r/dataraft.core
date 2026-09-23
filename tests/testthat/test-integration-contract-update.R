@@ -1,12 +1,14 @@
 test_that("reviewed removal and aggregation replace guarantees explicitly", {
   old <- dr_contract(
     "orders",
-    grain = "One order",
     columns = c(id = "integer", amount = "numeric"),
     key = "id",
-    rules = list(positive = ~ amount > 0),
-    column_metadata = list(id = list(description = "Identifier"))
-  )
+    rules = list(positive = ~ amount > 0)
+  ) |>
+    dataraft.core::dr_contract_meta(
+      grain = "One order",
+      column_metadata = list(id = list(description = "Identifier"))
+    )
   new <- dr_contract_update(
     old,
     id = "totals",
@@ -36,11 +38,11 @@ test_that("reviewed removal and aggregation replace guarantees explicitly", {
 test_that("unsafe inheritance and unchanged identity have actionable errors", {
   old <- dr_contract(
     "orders",
-    grain = "One order",
     columns = c(id = "integer", amount = "numeric"),
     key = "id",
     rules = list(positive = ~ amount > 0)
-  )
+  ) |>
+    dataraft.core::dr_contract_meta(grain = "One order")
   expect_snapshot(
     error = TRUE,
     dr_contract_update(old, columns = c(extra = "numeric"))

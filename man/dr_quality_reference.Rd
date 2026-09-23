@@ -8,8 +8,6 @@ dr_quality_reference(
   reference,
   by,
   name = "reference",
-  severity = lifecycle::deprecated(),
-  max_failure = lifecycle::deprecated(),
   copy = FALSE,
   na_matches = c("never", "na"),
   action = NULL,
@@ -30,7 +28,7 @@ columns to reference columns, for example \code{c(customer_id = "id")}.}
 \item{na_matches}{Whether missing values never match (\code{"never"}, default)
 or match other missing values (\code{"na"}).}
 
-\item{action, threshold, severity, max_failure}{See \code{\link[=dr_quality_rule]{dr_quality_rule()}}.}
+\item{action, threshold}{See \code{\link[=dr_quality_rule]{dr_quality_rule()}}.}
 }
 \value{
 A quality rule accepted by \code{\link[=dr_add_quality]{dr_add_quality()}} or \code{\link[=dr_contract]{dr_contract()}}.

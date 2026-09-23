@@ -1,10 +1,7 @@
 test_that("a checked workflow needs no extension namespace", {
-  flow <- dr_workflow() |>
-    dr_add_product(
-      dr_product("orders") |>
-        dr_add_contract(c(id = "integer", amount = "numeric")) |>
-        dr_add_quality(~ amount >= 0)
-    ) |>
+  flow <- dr_product("orders") |>
+    dr_add_contract(c(id = "integer", amount = "numeric")) |>
+    dr_add_quality(~ amount >= 0) |>
     dr_add_recipe(dr_recipe() |> dr_step_mutate(amount = round(amount, 2)))
   bad <- dr_run(
     write = FALSE,

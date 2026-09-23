@@ -7,7 +7,7 @@
 dr_set_sources(x, ..., sources, .recursive = FALSE)
 }
 \arguments{
-\item{x}{Product or modular workflow definition.}
+\item{x}{Product definition.}
 
 \item{...}{Named source values; use adapters for explicit readers.}
 

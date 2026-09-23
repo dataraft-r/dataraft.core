@@ -4,8 +4,7 @@ test_that("recipes materialize the checked result before publication", {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   withr::defer(DBI::dbDisconnect(con))
   DBI::dbWriteTable(con, "orders", data.frame(id = 1:3, amount = c(1, 2, 3)))
-  flow <- dr_workflow() |>
-    dr_add_product(dr_product("orders")) |>
+  flow <- dr_product("orders") |>
     dr_add_source(dr_source_database(con, table = "orders")) |>
     dr_add_recipe(
       dr_recipe() |>

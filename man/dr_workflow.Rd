@@ -3,9 +3,9 @@
 \name{dr_workflow}
 \alias{dr_workflow}
 \alias{dr_run.dr_workflow}
-\title{Define a modular product workflow or a delivery dependency graph}
+\title{Define a delivery dependency graph}
 \usage{
-dr_workflow(..., inputs = list(), code_version = NULL, execution = NULL)
+dr_workflow(..., inputs = list(), code_version = NULL)
 
 \method{dr_run}{dr_workflow}(
   pipeline,
@@ -24,10 +24,7 @@ defaults and \code{...} in step functions are not supported.}
 \item{inputs}{Named list of initial input values.}
 
 \item{code_version}{Explicit version of workflow code and dependencies.
-Required for function dependency graphs; optional for modular workflows.}
-
-\item{execution}{Optional connection-free \code{\link[=dr_execution_config]{dr_execution_config()}} for a modular
-workflow. Function graphs configure execution inside their steps.}
+Required for every dependency graph.}
 
 \item{pipeline}{A workflow specification.}
 
@@ -41,21 +38,17 @@ workflow. Function graphs configure execution inside their steps.}
 \code{FALSE} to inspect failures directly; errors also retain \code{condition$result}.}
 }
 \value{
-A workflow specification. Modular workflows return ordinary product
-run results from \code{\link[=dr_run]{dr_run()}}, \code{\link[=dr_run]{dr_run()}} or \code{\link[=dr_publish]{dr_publish()}}. Function dependency
-graphs return named \code{results}, effective \code{inputs}, and a step \code{status} table.
+A workflow specification. Running it returns named \code{results},
+effective \code{inputs}, and a step \code{status} table.
 }
 \description{
-Empty modular workflows are deprecated: attach sources and recipes directly
-to \code{\link[=dr_product]{dr_product()}}. The compatibility builder now returns an ordinary product.
-}
-\details{
 Named functions describe the receipt, preparation and dbt steps once.
 Each function argument names an input or another step. Steps execute in
 dependency order; a failed step blocks its consumers. Results remain ordinary
 R values, so existing \code{\link[dataraft.lake:dr_ingest]{dataraft.lake::dr_ingest()}}, \code{\link[=dr_publish]{dr_publish()}} and dbt calls keep their meaning.
 Keep report issuance outside the workflow as an explicit final decision.
-
+}
+\details{
 On correction, pass replacement \code{inputs} and the \code{previous} workflow result
 to \code{\link[=dr_run]{dr_run()}}. Unchanged successful branches are reused; changed inputs and their
 consumers rerun. Failed branches retry on the next explicit call. Change

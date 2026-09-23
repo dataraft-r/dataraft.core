@@ -32,12 +32,15 @@ test_that("contract differences distinguish tightening from metadata and semanti
   old <- dr_contract(
     "orders",
     version = "1",
-    owner = "Analytics",
-    description = "Orders",
-    grain = "One order",
-    columns = c(id = "integer", amount = "numeric"),
-    required = "id"
-  )
+    columns = c(id = "integer", amount = "numeric")
+  ) |>
+    dataraft.core::dr_contract_meta(
+      owner = "Analytics",
+      description = "Orders",
+      grain = "One order",
+      producer = "Analytics"
+    ) |>
+    dataraft.core::dr_contract_policy(required = "id")
   new <- old
   new$version <- "2"
   new$required <- c("id", "amount")

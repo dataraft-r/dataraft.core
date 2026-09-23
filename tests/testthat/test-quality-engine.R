@@ -96,15 +96,15 @@ test_that("formula threshold boundaries and warning gates agree across engines",
     equal <- dr_quality_rule(
       "limit",
       ~ amount > 0,
-      max_failure = 2 / 3,
+      threshold = 2 / 3,
       engine = engine
     )
     expect_identical(dr_run_quality(equal, data)$status, "passed")
     warning <- dr_quality_rule(
       "limit",
       ~ amount > 0,
-      severity = "warning",
-      max_failure = 0.5,
+      action = "warn",
+      threshold = 0.5,
       engine = engine
     )
     expect_identical(dr_run_quality(warning, data)$status, "warning")
@@ -131,10 +131,10 @@ test_that("failed or empty formula evidence prevents every writer", {
     for (amount in list(c(1, -1), numeric())) {
       result <- dr_product("orders") |>
         dr_add_source(data.frame(amount = amount)) |>
-        dr_add_contract(dr_contract(
-          columns = c(amount = "numeric"),
-          allow_empty = TRUE
-        )) |>
+        dr_add_contract(
+          dr_contract(columns = c(amount = "numeric")) |>
+            dataraft.core::dr_contract_policy(allow_empty = TRUE)
+        ) |>
         dr_add_quality(~ amount > 0, engine = engine) |>
         dr_set_target(structure(list(), class = "quality_gate_target")) |>
         dr_run(stop_on_failure = FALSE)
