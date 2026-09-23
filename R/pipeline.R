@@ -51,7 +51,9 @@ run_result <- function(run, status, release = NA_character_, quality = NULL) {
 #'   release and requires an explicit product `code_version`. Live reference
 #'   quality checks cannot reuse cached releases.
 #' * `business_date` and `notify`: optional lake publication context and an
-#'   existing notification callback.
+#'   existing notification callback. A product with an output-port SLA requires
+#'   `business_date` for publication; the successful delivery is evaluated
+#'   against the deadline and recorded with run evidence.
 #'
 #' Selecting a quality engine through execution defaults preserves the declared
 #' contract's fingerprint. Execution evidence separately records the resolved
