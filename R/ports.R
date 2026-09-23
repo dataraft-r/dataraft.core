@@ -62,6 +62,7 @@
 #' checked delivery in order through `dr_write_target()`. Failure of a later
 #' output leaves earlier commits in place and records per-port status in
 #' `result$port_outputs`; repeat publication only after inspecting those commits.
+#' Cache reuse is not supported with multiple outputs.
 #' @param product DataRaft product.
 #' @param port Output port.
 #' @return Updated product.
