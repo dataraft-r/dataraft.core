@@ -26,11 +26,14 @@ new_product <- function(
       automatic_version = automatic_version,
       code_version = code_version,
       sources = list(),
+      input_ports = list(),
+      output_ports = list(),
       transforms = list(),
       contract = NULL,
       quality = list(),
       target = NULL,
       catalogs = list(),
+      hooks = list(),
       owner = owner,
       description = description
     ),
@@ -314,6 +317,10 @@ dr_add_quality <- function(
 #'   dr_set_target("data/orders")
 dr_set_target <- function(x, target) {
   x <- editable_product(x)
+  if (length(x$output_ports)) {
+    abort("An output port already defines this target. Update the port instead.",
+      subclass = "dataraft_error_definition")
+  }
   x$target <- normalize_target(target)
   x
 }
@@ -551,11 +558,14 @@ dr_inspect.dr_product <- function(x, ...) {
     code_version = x$code_version,
     status = if (isTRUE(attr(x, "dr_validated"))) "validated" else "defined",
     sources = sources,
+    input_ports = lapply(x$input_ports, function(port) port[c("id", "version", "access")]),
+    output_ports = lapply(x$output_ports, function(port) port[c("id", "version", "access")]),
     transforms = lapply(x$transforms, dr_inspect),
     contract = canonical(effective_product_contract(x)),
     quality = canonical(x$quality),
     target = dr_inspect(x$target),
     catalogs = lapply(x$catalogs, dr_inspect),
+    hooks = lapply(x$hooks, length),
     owner = x$owner %||% x$contract$owner %||% "",
     description = x$description %||% x$contract$description %||% "",
     plan = product_plan(x, check = FALSE)

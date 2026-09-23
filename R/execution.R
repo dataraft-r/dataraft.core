@@ -158,6 +158,7 @@ dr_publish.dr_product <- function(
   execution = NULL,
   ...
 ) {
+  dr_assert_policies(x, event = "publish")
   if (!is.null(name)) {
     abort(
       subclass = "dataraft_error_definition",
@@ -302,6 +303,9 @@ dr_run.dr_product <- function(
     object <- dr_set_target(object, lake)
   }
   object <- apply_execution_defaults(object, execution)
+  policies <- if (write && !is.null(object$target)) {
+    dr_assert_policies(object, event = "publish")
+  } else NULL
   object <- dr_validate(object, .write = write)
   context <- .context %||% new_product_context(evidence, write)
   if (exists(object$id, context$results, inherits = FALSE)) {
@@ -376,6 +380,7 @@ dr_run.dr_product <- function(
       run_id = result$run_id,
       product = object$id,
       definition = dr_inspect(object),
+      policies = policies,
       code_version = object$code_version,
       started_at = result$started_at,
       finished_at = result$finished_at,
@@ -397,6 +402,7 @@ dr_run.dr_product <- function(
       result$finished_at
     )
   )
+  if (write) result <- run_product_hooks(object, result)
   result <- finalize_product_run(result, object, evidence, write = write)
   assign(object$id, result, context$results)
   if (length(result$warnings)) {
