@@ -31,6 +31,7 @@ new_product <- function(
       transforms = list(),
       contract = NULL,
       quality = list(),
+      policies = list(),
       target = NULL,
       catalogs = list(),
       hooks = list(),
@@ -370,6 +371,7 @@ dr_validate.dr_product <- function(data, contract = NULL, ..., .write = TRUE) {
     )
   }
   validate_product_graph(data, write = .write)
+  dr_assert_policies(data, event = "validate")
   attr(data, "dr_validated") <- TRUE
   data
 }
@@ -559,6 +561,7 @@ dr_inspect.dr_product <- function(x, ...) {
     transforms = lapply(x$transforms, dr_inspect),
     contract = canonical(effective_product_contract(x)),
     quality = canonical(x$quality),
+    policies = lapply(x$policies %||% list(), function(policy) policy[c("id", "version", "when")]),
     target = dr_inspect(x$target),
     catalogs = lapply(x$catalogs, dr_inspect),
     hooks = lapply(x$hooks, length),

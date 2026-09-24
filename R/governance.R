@@ -1,6 +1,7 @@
 #' Define a local organization policy
 #'
-#' Policies are supplied explicitly or via `options(dataraft.policies = ...)`.
+#' Attach policies with [dr_add_policy()]. The `dataraft.policies` option can
+#' supply additional organization-wide rules; both sources are evaluated.
 #' A matching policy requires non-empty product or contract metadata fields.
 #' Dotted paths such as `governance.retention` traverse nested lists.
 #' @param id,version Stable policy identifier and version.
@@ -25,6 +26,28 @@
     classification = classification, action = action), class = "dr_policy")
 }
 
+#' Attach a governance policy to a product
+#' @param product A DataRaft product definition.
+#' @param policy A [dr_policy()] definition.
+#' @return The updated product definition.
+#' @export
+dr_add_policy <- function(product, policy) {
+  product <- editable_product(product)
+  if (!inherits(policy, "dr_policy")) {
+    abort("Supply a dr_policy definition.", subclass = "dataraft_error_definition")
+  }
+  policies <- product$policies %||% list()
+  if (policy$id %in% vapply(policies, `[[`, character(1), "id")) {
+    abort("Policy IDs must be unique on a product.", subclass = "dataraft_error_definition")
+  }
+  product$policies[[policy$id]] <- policy
+  product
+}
+
+effective_policies <- function(product) {
+  c(product$policies %||% list(), getOption("dataraft.policies", list()))
+}
+
 metadata_path <- function(product, path) {
   parts <- strsplit(path, ".", fixed = TRUE)[[1]]
   if (parts[[1]] %in% c("owner", "description") && length(parts) == 1L) {
@@ -41,12 +64,12 @@ metadata_path <- function(product, path) {
 
 #' Evaluate organization policies for a product
 #' @param product DataRaft product.
-#' @param policies List of [dr_policy()] definitions. Defaults to the
-#'   `dataraft.policies` option.
+#' @param policies List of [dr_policy()] definitions. Defaults to product
+#'   policies plus additional organization-wide policies from the option.
 #' @param event Lifecycle event.
 #' @return A tibble with policy ID, version, decision, missing fields and time.
 #' @export
- dr_check_policies <- function(product, policies = getOption("dataraft.policies", list()), event = "publish") {
+ dr_check_policies <- function(product, policies = effective_policies(product), event = "publish") {
   if (!inherits(product, "dr_product") || !is.list(policies) ||
       any(!vapply(policies, inherits, logical(1), "dr_policy"))) {
     abort("Supply a product and a list of dr_policy definitions.", subclass = "dataraft_error_definition")

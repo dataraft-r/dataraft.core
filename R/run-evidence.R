@@ -375,6 +375,11 @@ safe_run_evidence <- function(result, product = NULL) {
     port_outputs = lapply(result$port_outputs %||% list(), function(port) {
       list(status = port$status, output = safe_descriptor(port$output))
     }),
+    policies = lapply(seq_len(nrow(metadata$policies %||% data.frame())), function(i) {
+      decision <- metadata$policies[i, , drop = FALSE]
+      decision$evaluated_at <- as.character(decision$evaluated_at)
+      safe_fields(as.list(decision), c("id", "version", "event", "decision", "missing", "evaluated_at"))
+    }),
     sla = lapply(metadata$sla %||% list(), function(check) {
       list(status = safe_scalar(check$status),
         business_date = as.character(check$business_date),
