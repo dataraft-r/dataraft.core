@@ -28,7 +28,7 @@ test_that("attached policies apply without session options and are retained in e
 })
 
 test_that("validate policies are checked during configuration validation", {
-  product <- dr_product("orders") |>
+  product <- dr_product("orders", data.frame(id = 1L)) |>
     dr_add_policy(dr_policy("owner", when = "validate", require = "owner"))
   expect_error(dr_validate(product), class = "dataraft_error_policy")
   product$owner <- "Analytics"
