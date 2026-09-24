@@ -10,6 +10,33 @@ test_that("organization policies block publication when metadata is missing", {
   expect_equal(dr_check_policies(product)$decision, "pass")
 })
 
+test_that("attached policies apply without session options and are retained in evidence", {
+  skip_if_not_installed("dataraft.adapters")
+  product <- dr_product("customers", data.frame(id = 1L)) |>
+    dr_add_policy(dr_policy("owner", require = "owner", version = "2"))
+  expect_equal(dr_check_policies(product)$decision, "block")
+  expect_error(dr_publish(product, to = tempfile("blocked-")), class = "dataraft_error_policy")
+  product$owner <- "Analytics"
+  evidence <- withr::local_tempdir()
+  result <- dr_run(dr_set_target(product, dataraft.adapters::dr_target_rds(
+    withr::local_tempfile())), evidence = evidence)
+  expect_equal(result$status, "published")
+  record <- dr_read_run(evidence, result$run_id)
+  expect_equal(record$policies[[1]]$id, "owner")
+  expect_equal(record$policies[[1]]$version, "2")
+  expect_equal(record$policies[[1]]$decision, "pass")
+})
+
+test_that("validate policies are checked during configuration validation", {
+  product <- dr_product("orders") |>
+    dr_add_policy(dr_policy("owner", when = "validate", require = "owner"))
+  expect_error(dr_validate(product), class = "dataraft_error_policy")
+  product$owner <- "Analytics"
+  expect_s3_class(dr_validate(product), "dr_product")
+  expect_error(dr_add_policy(product, dr_policy("owner", require = "description")),
+    class = "dataraft_error_definition")
+})
+
 test_that("impact traverses registered downstream dependencies without cycles", {
   old <- dr_contract("customers", columns = c(id = "integer"))
   new <- dr_contract("customers", version = "2", columns = c(customer_id = "integer"))

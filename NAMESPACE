@@ -272,6 +272,7 @@ importFrom(rlang,
 )
 export(dr_policy)
 export(dr_check_policies)
+export(dr_add_policy)
 export(dr_impact)
 export(dr_sla)
 export(dr_check_sla)

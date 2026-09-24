@@ -61,6 +61,7 @@ dr_validate.dr_model_product <- function(
   .write = TRUE
 ) {
   rlang::check_dots_empty()
+  dr_assert_policies(data, event = "validate")
   if (
     !is.null(contract) ||
       !is.null(data$contract) ||
