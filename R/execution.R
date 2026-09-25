@@ -548,6 +548,7 @@ dr_retry_ports <- function(product, result, evidence = NULL, business_date = NUL
     abort("Supply business_date when retrying an output with an SLA.",
       subclass = "dataraft_error_definition")
   }
+  for (port in sla_ports) dr_check_sla(port$sla, business_date)
   for (id in pending) {
     port <- product$output_ports[[id]]
     written <- tryCatch(dr_write_target(port$endpoint, result$data,
@@ -578,7 +579,17 @@ dr_retry_ports <- function(product, result, evidence = NULL, business_date = NUL
   result$metadata$status <- result$status
   result$metadata$finished_at <- result$finished_at
   result$metadata$port_outputs <- result$port_outputs
-  if (!is.null(evidence)) save_run_evidence(safe_run_evidence(result, product), evidence)
+  if (!is.null(evidence)) {
+    evidence_error <- tryCatch({
+      save_run_evidence(safe_run_evidence(result, product), evidence)
+      NULL
+    }, error = identity)
+    if (inherits(evidence_error, "error")) {
+      result$evidence_error <- evidence_error
+      result$warnings <- c(result$warnings,
+        "Run evidence could not be saved after port retry; inspect result$evidence_error locally.")
+    }
+  }
   result
 }
 
