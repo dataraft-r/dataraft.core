@@ -508,6 +508,81 @@ publish_secondary_ports <- function(product, result) {
 }
 
 
+#' Retry only unpublished secondary output ports
+#'
+#' Use the original in-memory result from a run that failed after its primary
+#' target committed. The checked rows are retained in that result. Already
+#' published ports are never written again, which matters for append targets.
+#' Reuse the same product definition and resolve the failed target before retrying.
+#' Saved JSON run evidence contains no rows and cannot be used as `result`.
+#'
+#' @param product The original product with its output port definitions.
+#' @param result The in-memory `dr_run_result` from a partial publication.
+#' @param evidence Optional run evidence directory to update after retry.
+#' @param business_date Required if an unpublished port has an SLA.
+#' @return Updated result retaining the original run ID and per-port receipts.
+#' @export
+dr_retry_ports <- function(product, result, evidence = NULL, business_date = NULL) {
+  if (!inherits(product, "dr_product") || !inherits(result, "dr_run_result") ||
+      !identical(result$status, "error") ||
+      !identical(product$id, result$asset) ||
+      !identical(names(product$output_ports), names(result$port_outputs)) ||
+      length(product$output_ports) < 2L ||
+      !identical(result$port_outputs[[1L]]$status, "published") ||
+      is.null(result$data)) {
+    abort("Supply the original product and its partial in-memory run result.",
+      subclass = "dataraft_error_definition")
+  }
+  statuses <- vapply(result$port_outputs, `[[`, "", "status")
+  if (!all(statuses %in% c("published", "failed", "not_attempted")) ||
+      !any(statuses != "published") ||
+      any(statuses[-1L] == "published" &
+        cumsum(statuses[-1L] != "published") > 0L)) {
+    abort("Output port receipts are not a sequential partial publication.",
+      subclass = "dataraft_error_definition")
+  }
+  pending <- names(statuses)[statuses != "published"]
+  sla_ports <- product$output_ports[pending]
+  sla_ports <- sla_ports[vapply(sla_ports, function(port) !is.null(port$sla), logical(1))]
+  if (length(sla_ports) && is.null(business_date)) {
+    abort("Supply business_date when retrying an output with an SLA.",
+      subclass = "dataraft_error_definition")
+  }
+  for (id in pending) {
+    port <- product$output_ports[[id]]
+    written <- tryCatch(dr_write_target(port$endpoint, result$data,
+      list(run_id = result$run_id, product = product$id,
+        contract = product$contract, metadata = result$metadata)), error = identity)
+    if (inherits(written, "error") || !is.list(written)) {
+      result$port_outputs[[id]] <- list(status = "failed")
+      result$port_error <- written
+      result$error <- simpleError(paste0("Output port `", id,
+        "` failed during retry; previously published ports were not repeated."))
+      break
+    }
+    result$port_outputs[[id]] <- list(status = "published", output = written)
+    if (!is.null(port$sla)) {
+      delivered_at <- as.POSIXct(now(), format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+      result$metadata$sla[[id]] <- dr_check_sla(port$sla, business_date,
+        delivered_at = delivered_at, at = delivered_at)
+    }
+  }
+  if (all(vapply(result$port_outputs, function(port) {
+    identical(port$status, "published")
+  }, logical(1)))) {
+    result$status <- "published"
+    result$error <- NULL
+    result$port_error <- NULL
+  }
+  result$finished_at <- now()
+  result$metadata$status <- result$status
+  result$metadata$finished_at <- result$finished_at
+  result$metadata$port_outputs <- result$port_outputs
+  if (!is.null(evidence)) save_run_evidence(safe_run_evidence(result, product), evidence)
+  result
+}
+
+
 #' @export
 #' @noRd
 dr_execute_target.default <- function(target, product, business_date = NULL, ...) {
