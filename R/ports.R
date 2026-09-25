@@ -61,7 +61,8 @@
 #' The first output is the primary target. Later outputs publish the same
 #' checked delivery in order through `dr_write_target()`. Failure of a later
 #' output leaves earlier commits in place and records per-port status in
-#' `result$port_outputs`; repeat publication only after inspecting those commits.
+#' `result$port_outputs`; use [dr_retry_ports()] with the original in-memory
+#' result to resume only unpublished outputs.
 #' Cache reuse is not supported with multiple outputs.
 #' @param product DataRaft product.
 #' @param port Output port.

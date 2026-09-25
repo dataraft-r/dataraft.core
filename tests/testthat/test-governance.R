@@ -133,3 +133,29 @@ test_that("published hooks receive a run ID and cannot undo a release", {
   expect_equal(result$status, "completed")
   expect_equal(length(events), 0L)
 })
+
+test_that("retry resumes after a committed primary without writing it twice", {
+  skip_if_not_installed("dataraft.adapters")
+  first <- withr::local_tempfile()
+  blocked <- withr::local_tempfile()
+  evidence <- withr::local_tempdir()
+  writeLines("not a directory", blocked)
+  product <- dr_product("retry.ports", data.frame(id = 1L)) |>
+    dr_add_output(dr_output("primary", dataraft.adapters::dr_target_rds(first))) |>
+    dr_add_output(dr_output("secondary", dataraft.adapters::dr_target_rds(blocked)))
+  result <- dr_run(product, stop_on_failure = FALSE, evidence = evidence)
+  expect_equal(result$status, "error")
+  before <- list.files(first, recursive = TRUE)
+  expect_error(dr_retry_ports(product, dr_read_run(evidence, result$run_id)),
+    class = "dataraft_error_definition")
+  unlink(blocked)
+  resumed <- dr_retry_ports(product, result, evidence = evidence)
+  expect_equal(resumed$status, "published")
+  expect_equal(resumed$run_id, result$run_id)
+  expect_equal(vapply(resumed$port_outputs, `[[`, "", "status"),
+    c(primary = "published", secondary = "published"))
+  expect_equal(list.files(first, recursive = TRUE), before)
+  expect_equal(dr_read_run(evidence, result$run_id)$port_outputs$secondary$status,
+    "published")
+  expect_error(dr_retry_ports(product, resumed), class = "dataraft_error_definition")
+})
