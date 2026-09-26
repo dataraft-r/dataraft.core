@@ -6,6 +6,15 @@ Use this package when the same data arrives again and again and you need to know
 
 [`dataraft` overview](https://github.com/dataraft-r/dataraft) · [Core reference](https://dataraft-r.github.io/dataraft/components/dataraft.core/reference/index.html)
 
+## Install
+
+Requires R 4.2 or later. Install the development package from GitHub:
+
+```r
+install.packages("pak")
+pak::pak("dataraft-r/dataraft.core")
+```
+
 ## Try it
 
 ```r
@@ -22,4 +31,4 @@ dr_quality_rows(result)
 
 The negative amount blocks this delivery. Correct the input and run the same product again. `write = FALSE` skips a configured DataRaft writer; source and transformation callbacks may still run.
 
-Install the development package with `pak::pak("dataraft-r/dataraft.core")`. Choose [adapters](https://github.com/dataraft-r/dataraft.adapters) to connect external sources and destinations, or [lake](https://github.com/dataraft-r/dataraft.lake) for versioned releases. The [getting-started guide](https://dataraft-r.github.io/dataraft/articles/get-started.html) walks through the whole flow.
+Choose [adapters](https://github.com/dataraft-r/dataraft.adapters) to connect external sources and destinations, or [lake](https://github.com/dataraft-r/dataraft.lake) for versioned releases. The [getting-started guide](https://dataraft-r.github.io/dataraft/articles/get-started.html) walks through the whole flow.
