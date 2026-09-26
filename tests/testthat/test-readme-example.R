@@ -8,7 +8,9 @@ test_that("README first example runs", {
   description <- file.path(dirname(readme), "DESCRIPTION")
   if (!file.exists(description) ||
       read.dcf(description, fields = "Package")[1L] != "dataraft.core") {
-    skip("This checkout does not contain the dataraft.core README")
+    readme <- file.path(Sys.getenv("GITHUB_WORKSPACE"), "packages",
+                        "dataraft.core", "README.md")
+    if (!file.exists(readme)) skip("README source is unavailable here")
   }
   lines <- readLines(readme, warn = FALSE)
   heading <- match("## Try it", lines)
