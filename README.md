@@ -4,7 +4,7 @@
 
 Use this package when the same data arrives again and again and you need to know whether its columns and values still meet your rules. A product brings the input, preparation, contract and checks together; a run returns a result you can inspect. It also works entirely in memory.
 
-[`dataraft` overview](https://github.com/dataraft-r/dataraft) · [Core reference](https://dataraft-r.github.io/dataraft/packages/dataraft.core/)
+[`dataraft` overview](https://github.com/dataraft-r/dataraft) · [Core reference](https://dataraft-r.github.io/dataraft/components/dataraft.core/reference/index.html)
 
 ## Try it
 
